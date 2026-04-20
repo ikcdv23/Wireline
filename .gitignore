@@ -1,0 +1,15 @@
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+
+# FL Studio backups
+assets/audio/*/Backup/
+
+# Node (futuro Electron)
+node_modules/
+dist/

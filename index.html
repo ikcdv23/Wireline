@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WIRELINE</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- SPLASH: CLICK PARA CONTINUAR -->
+    <div id="splash-overlay">
+        <div id="splash-content">
+            <div id="splash-logo">WIRELINE</div>
+            <div id="splash-sub">v1.0</div>
+            <div id="splash-prompt">CLICK PARA CONTINUAR</div>
+        </div>
+    </div>
+
+    <!-- MAIN MENU OVERLAY -->
+    <div id="mainmenu-overlay" class="overlay hidden">
+        <div id="mainmenu-panel">
+            <div id="menu-scanlines"></div>
+            <div id="menu-title-wrap">
+                <div id="menu-title-glow">WIRELINE</div>
+                <div id="menu-title">WIRELINE</div>
+            </div>
+            <div id="menu-tagline">CONECTA. CALCULA. SOBREVIVE.</div>
+            <div id="menu-separator">&#9632;&#9632;&#9632;&#9632;&#9632;&#9632;&#9632;&#9632;&#9632;&#9632;&#9632;&#9632;&#9632;&#9632;&#9632;&#9632;</div>
+            <button id="btn-start" class="action-btn menu-btn">&#9658; NUEVA PARTIDA</button>
+            <div id="menu-footer">v1.0 &nbsp;&#9632;&nbsp; PIXEL ROGUE &nbsp;&#9632;&nbsp; 2026</div>
+        </div>
+    </div>
+
+    <div id="game-container">
+        <canvas id="board-canvas"></canvas>
+        <div id="ui-layer">
+            <div id="hud">
+                <div id="hud-left">
+                    <span id="hud-corner-tl" class="hud-corner">&#9492;&#9472;</span>
+                    <span id="round-display">Ronda 1</span>
+                    <span id="hud-sep" class="hud-sep">&#9632;</span>
+                    <span id="zone-display">Prototipo</span>
+                </div>
+                <div id="hud-center">
+                    <span id="hud-score-icon" class="hud-icon">&#9889;</span>
+                    <span id="score-display">0</span>
+                    <span id="score-label">/ <span id="target-display">50</span></span>
+                </div>
+                <div id="hud-right">
+                    <span id="hud-lives-icon" class="hud-icon">&#9829;</span>
+                    <span id="lives-display"></span>
+                    <span id="hud-money-icon" class="hud-icon hud-icon-money">&#9670;</span>
+                    <span id="money-display">$0</span>
+                    <span id="hud-corner-tr" class="hud-corner">&#9472;&#9488;</span>
+                    <button id="btn-pause" class="pause-btn" title="Pausa">&#9612;&#9612;</button>
+                </div>
+            </div>
+            <div id="dice-tray-wrap">
+                <div id="dice-tray-label"><span>&#9632;</span> DADOS EN JUEGO <span>&#9632;</span></div>
+                <div id="dice-tray"></div>
+            </div>
+            <div id="action-bar">
+                <button id="btn-roll" class="action-btn">&#9654; TIRAR DADOS</button>
+                <button id="btn-confirm" class="action-btn" disabled>&#9889; ACTIVAR CIRCUITO</button>
+            </div>
+        </div>
+        <div id="pause-overlay" class="overlay hidden">
+            <div id="pause-panel">
+                <h2>&#9612;&#9612; PAUSA</h2>
+                <p id="pause-info"></p>
+                <div class="pause-buttons">
+                    <button id="btn-resume" class="action-btn">&#9654; CONTINUAR</button>
+                    <button id="btn-quit" class="action-btn btn-danger">&#9632; SALIR AL MENU</button>
+                </div>
+            </div>
+        </div>
+        <div id="shop-overlay" class="overlay hidden">
+            <div id="shop-panel">
+                <div class="panel-header-deco">
+                    <span class="panel-corner-tl"></span>
+                    <span class="panel-corner-tr"></span>
+                </div>
+                <h2>&#9632; TIENDA &#9632;</h2>
+                <div id="shop-items"></div>
+                <button id="btn-skip-shop" class="action-btn">&#9658; SIGUIENTE RONDA</button>
+                <div class="panel-footer-deco">
+                    <span class="panel-corner-bl"></span>
+                    <span class="panel-corner-br"></span>
+                </div>
+            </div>
+        </div>
+        <div id="score-breakdown" class="hidden"></div>
+        <div id="gameover-overlay" class="overlay hidden">
+            <div id="gameover-panel">
+                <div class="panel-header-deco">
+                    <span class="panel-corner-tl"></span>
+                    <span class="panel-corner-tr"></span>
+                </div>
+                <h2>CORTOCIRCUITO</h2>
+                <div class="gameover-glitch" aria-hidden="true">CORTOCIRCUITO</div>
+                <p>Has llegado a la ronda <span id="final-round">1</span></p>
+                <p>Puntuacion total: <span id="final-score">0</span></p>
+                <button id="btn-restart" class="action-btn">&#9654; VOLVER AL MENU</button>
+                <div class="panel-footer-deco">
+                    <span class="panel-corner-bl"></span>
+                    <span class="panel-corner-br"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/utils/constants.js"></script>
+    <script src="js/utils/helpers.js"></script>
+    <script src="js/entities/dice.js"></script>
+    <script src="js/entities/board.js"></script>
+    <script src="js/entities/components.js"></script>
+    <script src="js/core/renderer.js"></script>
+    <script src="js/core/audio.js"></script>
+    <script src="js/core/juice.js"></script>
+    <script src="js/core/input.js"></script>
+    <script src="js/core/scoring.js"></script>
+    <script src="js/ui/modal.js"></script>
+    <script src="js/ui/hud.js"></script>
+    <script src="js/ui/shop.js"></script>
+    <script src="js/core/game.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
