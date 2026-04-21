@@ -1,8 +1,8 @@
 // HUD: ronda, zona, score, vidas, dinero. Tambien gestiona los estados
 // visuales de overheat / meltdown cuando el score supera el target.
 
-import { CONFIG } from '../config/constants.js';
-import { clamp, lerp, easeOutCubic } from '../lib/math.js';
+import { CONFIG } from '../../config/constants.js';
+import { clamp, lerp, easeOutCubic } from '../../lib/math.js';
 
 export class HUD {
   constructor() {

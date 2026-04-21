@@ -1,4 +1,3 @@
-// Orquestador principal. Instancia todos los sistemas, gestiona el estado
 // del jugador y el bucle de rondas (idle → rolling → placing → scoring → shop).
 
 import { CONFIG } from './config/constants.js';
@@ -10,9 +9,9 @@ import { Renderer } from './systems/Renderer.js';
 import { InputHandler } from './systems/InputHandler.js';
 import { AudioEngine } from './systems/AudioEngine.js';
 import { JuiceEngine } from './systems/JuiceEngine.js';
-import { HUD } from './ui/HUD.js';
-import { Modal } from './ui/Modal.js';
-import { Shop } from './ui/Shop.js';
+import { HUD } from './screens/ui/HUD.js';
+import { Modal } from './screens/ui/Modal.js';
+import { Shop } from './screens/ui/Shop.js';
 import { startMenuMusic } from './systems/MenuMusic.js';
 
 const ZONE_PATTERNS = ['prototipo', 'produccion', 'sobrecarga', 'singularidad'];

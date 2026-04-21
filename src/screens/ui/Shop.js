@@ -2,9 +2,9 @@
 // Gestiona la compra + el modo "placement" para colocar el componente
 // recien comprado sobre un nodo del tablero.
 
-import { CONFIG, NODE_SOURCE, NODE_OUTPUT } from '../config/constants.js';
-import { DIE_TYPES } from '../config/dieTypes.js';
-import { dist, randInt } from '../lib/math.js';
+import { CONFIG, NODE_SOURCE, NODE_OUTPUT } from '../../config/constants.js';
+import { DIE_TYPES } from '../../config/dieTypes.js';
+import { dist, randInt } from '../../lib/math.js';
 import { Modal } from './Modal.js';
 
 export class Shop {
