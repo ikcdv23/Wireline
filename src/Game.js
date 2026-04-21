@@ -80,6 +80,9 @@ export class Game {
   }
 
   start() {
+    this.container.classList.remove('hidden');
+    this.renderer.resize();
+
     this.state.target = this.scoring.getTarget(this.state.round);
     this.state.phase = 'idle';
     this.roundScore = 0;

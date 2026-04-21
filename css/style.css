@@ -111,6 +111,13 @@ body {
     overflow: hidden;
 }
 
+/* Oculto antes de empezar la partida (y al volver al menu si se decide ocultar) */
+#game-container.hidden {
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+}
+
 /* Fondo: cuadricula de circuito */
 #game-container::before {
     content: '';
@@ -900,6 +907,7 @@ body {
 
 .menu-btn {
     font-size: 11px;
+    margin: 5px;
     padding: 16px 36px;
     letter-spacing: 2px;
     position: relative;
@@ -908,6 +916,21 @@ body {
 }
 
 @keyframes menu-btn-blink {
+    0%, 100% { box-shadow: 4px 4px 0 #506600, 0 0 12px var(--accent-cyan)33; }
+    50% { box-shadow: 4px 4px 0 #005566, 0 0 28px var(--accent-cyan)66; }
+}
+
+.tutorial-btn {
+    font-size: 11px;
+    margin: 5px;
+    padding: 16px 36px;
+    letter-spacing: 2px;
+    position: relative;
+    z-index: 1;
+    animation: tutorial-btn-blink 1.2s steps(2) infinite;
+}
+
+@keyframes tutorial-btn-blink {
     0%, 100% { box-shadow: 4px 4px 0 #005566, 0 0 12px var(--accent-cyan)33; }
     50% { box-shadow: 4px 4px 0 #005566, 0 0 28px var(--accent-cyan)66; }
 }

@@ -1,68 +1,40 @@
-import {Game} from './Game.js';
-import {SplashScreen} from './screens/SplashScreen.js';
-import {startMenuMusic, stopMenuMusic} from './systems/MenuMusic.js';
+// Entry point del juego.
+// Orquesta splash + menu. Dentro de la partida, todo vive en Game.
 
-const game = new Game ();
+import { Game } from './Game.js';
+import { startMenuMusic, stopMenuMusic } from './systems/MenuMusic.js';
+import { SplashScreen } from './screens/SplashScreen.js';
+import { MenuScreen } from './screens/MenuScreen.js';
 
-// --- Splash screen ---
-const splash = new SplashScreen ({
-  onDone: () => {
-    game.audio.init ();
-    startMenuMusic ();
+const game = new Game();
 
-    splash.unmount ();
+const menu = new MenuScreen({
+  onStart: () => {
+    // Jingle del boton "Nueva partida"
+    game.audio.ensure();
+    game.audio._tone(200, 0.08, 'square', 0.06);
+    game.audio._tone(400, 0.1, 'sine', 0.08, 0.05);
+    game.audio._tone(600, 0.1, 'sine', 0.08, 0.1);
+    game.audio._tone(900, 0.12, 'sine', 0.1, 0.16);
+    game.audio._tone(1200, 0.18, 'sine', 0.1, 0.24);
 
-    setTimeout (() => {
-      const menu = document.getElementById ('mainmenu-overlay');
-      menu.classList.remove ('hidden');
-      menu.offsetHeight;
-      menu.classList.add ('visible');
-      initMenu ();
-    }, 600);
+    stopMenuMusic();
+    menu.unmount();
+
+    setTimeout(() => game.start(), 280);
+  },
+  onTutorial: () => {
+    console.log('Tutorial pendiente de implementar');
   },
 });
-splash.mount ();
 
-// --- Menu principal ---
-function initMenu () {
-  const menuOverlay = document.getElementById ('mainmenu-overlay');
-  const btnStart = document.getElementById ('btn-start');
+const splash = new SplashScreen({
+  onDone: () => {
+    game.audio.init();
+    startMenuMusic();
+    splash.unmount();
 
-  btnStart.addEventListener ('click', () => {
-    game.audio.ensure ();
-    game.audio._tone (200, 0.08, 'square', 0.06);
-    game.audio._tone (400, 0.1, 'sine', 0.08, 0.05);
-    game.audio._tone (600, 0.1, 'sine', 0.08, 0.1);
-    game.audio._tone (900, 0.12, 'sine', 0.1, 0.16);
-    game.audio._tone (1200, 0.18, 'sine', 0.1, 0.24);
-
-    stopMenuMusic ();
-
-    menuOverlay.classList.remove ('visible');
-    setTimeout (() => {
-      menuOverlay.classList.add ('hidden');
-      game.start ();
-    }, 280);
-  });
-
-  // Glow pulsante del titulo
-  const titleGlow = document.getElementById ('menu-title-glow');
-  if (titleGlow) {
-    let pulseDir = 1;
-    let pulseVal = 0;
-    function pulseTick () {
-      pulseVal += pulseDir * 0.025;
-      if (pulseVal >= 1) {
-        pulseVal = 1;
-        pulseDir = -1;
-      }
-      if (pulseVal <= 0) {
-        pulseVal = 0;
-        pulseDir = 1;
-      }
-      titleGlow.style.opacity = pulseVal.toFixed (2);
-      requestAnimationFrame (pulseTick);
-    }
-    requestAnimationFrame (pulseTick);
-  }
-}
+    setTimeout(() => menu.mount(), 600);
+  },
+});
+splash.mount();
