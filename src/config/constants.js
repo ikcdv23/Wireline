@@ -12,20 +12,22 @@ export const CONFIG = {
 
   PLAYER: {
     START_LIVES: 3,
-    START_MONEY: 3,
+    START_MONEY: 5,
   },
 
   SCORING: {
-    BASE_MULT: 1.0, // sin mult gratis — los componentes son el unico camino
-    BASE_TARGET: 15, // objetivo ronda 1 mas alto desde el principio
-    TARGET_GROWTH: 1.40, // exonencial
+    BASE_MULT: 1.0,
+    // FUTURE FEAT --> añadir modificadores de partida imitando las barajas de balatro (baraja azul +1 descarte, roja +1 mano)
+    BASE_TARGET: 15,
+    TARGET_GROWTH: 1.40,
   },
 
   ZONES: [
     {name: 'Prototipo', rounds: 3, color: '#b040ff'},
-    {name: 'Produccion', rounds: 3, color: '#00f0ff'},
-    {name: 'Sobrecarga', rounds: 3, color: '#ffe156'},
-    {name: 'Singularidad', rounds: 3, color: '#ff4060'}, // modo infinito
+    {name: 'Produccion', rounds: 6, color: '#00f0ff'},
+    {name: 'Sobrecarga', rounds: 6, color: '#ffe156'},
+    {name: 'Singularidad', rounds: 6, color: '#ff4060'}, 
+    // FUTURE FEAT --> modo infinito
     /* Contemplar implementar una generacion procedural de rondas 
     para el modo infinito, en vez de repetir la ultima zona.
     */
@@ -50,8 +52,8 @@ export const CONFIG = {
   },
 
   ANIMATION: {
-    CURRENT_SPEED: 3, // pixels per frame para la animacion de corriente
-    SCORE_TICK_DURATION: 800, // ms para el conteo de puntuacion
+    CURRENT_SPEED: 3, 
+    SCORE_TICK_DURATION: 600, 
   },
 };
 

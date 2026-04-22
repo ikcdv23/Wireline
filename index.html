@@ -11,7 +11,7 @@
     <div id="splash-overlay">
         <div id="splash-content">
             <div id="splash-logo">WIRELINE</div>
-            <div id="splash-sub">v2.1.1</div>
+            <div id="splash-sub">v2.2.0</div>
             <div id="splash-prompt">CLICK PARA CONTINUAR</div>
         </div>
     </div>
@@ -28,7 +28,30 @@
             <div id="menu-separator">&#9632;&#9632;&#9632;&#9632;&#9632;&#9632;&#9632;&#9632;&#9632;&#9632;&#9632;&#9632;&#9632;&#9632;&#9632;&#9632;</div>
             <button id="btn-start" class="action-btn menu-btn">&#9658; NUEVA PARTIDA</button>
             <button id="btn-tutorial" class="action-btn menu-btn">&#8505; TUTORIAL</button>
-            <div id="menu-footer">v2.1.1 &nbsp;&#9632;&nbsp; PIXEL ROGUE &nbsp;&#9632;&nbsp; 2026</div>
+            <button id="btn-changelog" class="version-banner">
+                <span class="banner-pulse"></span>
+                <span class="banner-version">v2.2.0</span>
+                <span class="banner-shout">IS HERE !!!</span>
+                <span class="banner-hint">&gt; click para ver novedades</span>
+            </button>
+            <div id="menu-footer">v2.2.0 &nbsp;&#9632;&nbsp; PIXEL ROGUE &nbsp;&#9632;&nbsp; 2026</div>
+        </div>
+    </div>
+
+    <!-- CHANGELOG OVERLAY -->
+    <div id="changelog-overlay" class="overlay hidden">
+        <div id="changelog-panel">
+            <div class="panel-header-deco">
+                <span class="panel-corner-tl"></span>
+                <span class="panel-corner-tr"></span>
+            </div>
+            <h2>&#9632; NOVEDADES &#9632;</h2>
+            <div id="changelog-content"></div>
+            <button id="btn-changelog-close" class="action-btn">&#9658; VOLVER</button>
+            <div class="panel-footer-deco">
+                <span class="panel-corner-bl"></span>
+                <span class="panel-corner-br"></span>
+            </div>
         </div>
     </div>
 
@@ -43,7 +66,7 @@
                     <span id="zone-display">Prototipo</span>
                 </div>
                 <div id="hud-center">
-                    <span id="hud-score-icon" class="hud-icon">&#9889;</span>
+                    <span id="hud-score-icon" class="hud-icon"></span>
                     <span id="score-display">0</span>
                     <span id="score-label">/ <span id="target-display">50</span></span>
                 </div>
@@ -63,7 +86,7 @@
                 </div>
                 <div id="action-bar">
                     <button id="btn-roll" class="action-btn">&#9654; TIRAR DADOS</button>
-                    <button id="btn-confirm" class="action-btn" disabled>&#9889; ACTIVAR CIRCUITO</button>
+                    <button id="btn-confirm" class="action-btn" disabled> ACTIVAR CIRCUITO</button>
                 </div>
             </div>
         </div>

@@ -1,16 +1,18 @@
 export class MenuScreen {
-  constructor ({onStart, onTutorial}) {
+  constructor ({onStart, onTutorial, onChangelog}) {
     this.onStart = onStart;
     this.onTutorial = onTutorial;
+    this.onChangelog = onChangelog;
 
     this.overlay = document.getElementById ('mainmenu-overlay');
     this.btnStart = document.getElementById ('btn-start');
     this.btnTutorial = document.getElementById ('btn-tutorial');
+    this.btnChangelog = document.getElementById ('btn-changelog');
 
     this.onClickStart = this.onClickStart.bind (this);
     this.onClickTutorial = this.onClickTutorial.bind (this);
+    this.onClickChangelog = this.onClickChangelog.bind (this);
 
-    // Guardamos el id del frame activo para poder cancelar la animacion.
     this.pulseRaf = null;
   }
 
@@ -21,15 +23,16 @@ export class MenuScreen {
 
     this.btnStart.addEventListener ('click', this.onClickStart);
     this.btnTutorial.addEventListener ('click', this.onClickTutorial);
+    this.btnChangelog.addEventListener ('click', this.onClickChangelog);
     this.startGlow ();
   }
 
   unmount () {
     this.btnStart.removeEventListener ('click', this.onClickStart);
     this.btnTutorial.removeEventListener ('click', this.onClickTutorial);
+    this.btnChangelog.removeEventListener ('click', this.onClickChangelog);
     this.stopGlow ();
 
-    // Fade de salida.
     this.overlay.classList.remove ('visible');
     setTimeout (() => this.overlay.classList.add ('hidden'), 280);
   }
@@ -40,6 +43,10 @@ export class MenuScreen {
 
   onClickTutorial () {
     this.onTutorial ();
+  }
+
+  onClickChangelog () {
+    this.onChangelog ();
   }
 
   startGlow () {

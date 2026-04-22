@@ -1,8 +1,5 @@
-// Definiciones de los componentes comprables. Cada uno modifica la puntuacion
-// o el grafo de alguna forma. La logica concreta vive en `apply` o `modifyEdges`.
-
-import {NODE_SOURCE, NODE_OUTPUT} from './constants.js';
-import {dist} from '../lib/math.js';
+import { NODE_SOURCE, NODE_OUTPUT } from './constants.js';
+import { dist } from '../lib/math.js';
 
 export const COMPONENT_DEFS = [
   {
@@ -11,21 +8,27 @@ export const COMPONENT_DEFS = [
     desc: 'Suma los puntos del dado anterior al actual',
     price: 5,
     rarity: 'common',
-    symbol: '⮂', // bateria
-    color: '#40ff90', // verde
-    ringStyle: 'charge', // barra de carga que se llena
+    symbol: '⮂',
+    color: '#40ff90',
+    ringStyle: 'charge',
     storedValue: 0,
-    apply (node) {
-      const bonus = this.storedValue;
-      // Guardar el dado actual para la proxima activacion
-      this.storedValue = node.dieValue || 0;
-      return {addFlat: bonus};
+    effect(node) {
+      if (!node.dieValue) return {};
+      return { addFlat: this.storedValue };
     },
-    getLabel (_node) {
+    onScore(node) {
+      if (node.dieValue) {
+        this.storedValue = node.dieValue;
+      }
+    },
+    onRoundEnd(_node) {
+      this.storedValue = 0;
+    },
+    getLabel(_node) {
       const stored = this.storedValue || 0;
       return stored > 0 ? `+${stored} MEM` : 'EMPTY';
     },
-    getTooltipExtra (_node) {
+    getTooltipExtra(_node) {
       const s = this.storedValue || 0;
       return s > 0 ? `GUARDADO: +${s} PTS` : 'SIN CARGA';
     },
@@ -36,16 +39,16 @@ export const COMPONENT_DEFS = [
     desc: 'El dado en este nodo cuenta doble',
     price: 6,
     rarity: 'uncommon',
-    symbol: '⇆', // flechas dobles
-    color: '#00f0ff', // cyan
-    ringStyle: 'double', // nodo se dibuja como doble cuadrado
-    apply (node) {
-      return {doubleDie: true};
+    symbol: '⇆',
+    color: '#00f0ff',
+    ringStyle: 'double',
+    effect(_node) {
+      return { doubleDie: true };
     },
-    getLabel (node) {
+    getLabel(node) {
       return `${node.dieValue}>${node.dieValue * 2}`;
     },
-    getTooltipExtra (node) {
+    getTooltipExtra(node) {
       return node.dieValue
         ? `AHORA: ${node.dieValue} > ${node.dieValue * 2}`
         : null;
@@ -54,67 +57,26 @@ export const COMPONENT_DEFS = [
   {
     id: 'overload',
     name: 'Sobretension',
-    desc: 'Dispara 2 veces solo si el dado es maximo en su tipo (10 en D10, 12 en D12...)',
-    price: 4,
+    desc: 'x2 multi solo si el dado es maximo en su tipo',
+    price: 6,
     rarity: 'uncommon',
-    symbol: '⇅', // flechas verticales
-    color: '#ff39a8', // rosa
-    ringStyle: 'invert', // ver case 'invert' en Renderer.drawComponentEffect
-    apply (node) {
-      // Dispara solo si el dado es el maximo de su tipo (6 en d6, 12 en d12...).
-      // node.dieFaces lo rellena Board.placeDieOnNode cuando el dado aterriza.
+    symbol: '⇅',
+    color: '#ff39a8',
+    ringStyle: 'invert',
+    effect(node) {
       if (node.dieFaces && node.dieValue === node.dieFaces) {
-        return {doubleDie: true};
+        return { addMult: 2.0 };
       }
       return {};
     },
-    getLabel (node) {
-      if (node.dieValue === node.dieFaces) {
-        return `${node.dieValue} MAX!`;
-      } else {
-        return `${node.dieValue}`;
-      }
+    getLabel(node) {
+      if (node.dieValue === node.dieFaces) return `${node.dieValue} MAX!`;
+      return `${node.dieValue}`;
     },
-    getTooltipExtra (node) {
+    getTooltipExtra(node) {
       if (!node.dieValue) return null;
       if (node.dieValue !== node.dieFaces) return 'INACTIVO';
       return `AHORA: ${node.dieValue} → ${node.dieValue * 2}`;
-    },
-  },
-  {
-    id: 'shortcircuit',
-    name: 'Cortocircuito',
-    desc: 'Conecta con los 2 nodos mas cercanos',
-    price: 7,
-    rarity: 'uncommon',
-    symbol: '⚡', // rayo
-    color: '#ff8040', // naranja
-    ringStyle: 'arcs', // arcos visuales hacia nodos conectados
-    modifyEdges (board, nodeId) {
-      // Conectar con los 2 nodos mas cercanos que no sean vecinos directos
-      const node = board.getNode (nodeId);
-      const currentNeighborIds = new Set ();
-      for (const edge of board.edges) {
-        if (edge.from === nodeId) currentNeighborIds.add (edge.to);
-        if (edge.to === nodeId) currentNeighborIds.add (edge.from);
-      }
-      const candidates = board.nodes
-        .filter (
-          n =>
-            n.id !== nodeId &&
-            n.type !== NODE_SOURCE &&
-            n.type !== NODE_OUTPUT &&
-            !currentNeighborIds.has (n.id)
-        )
-        .map (n => ({id: n.id, dist: dist (node.x, node.y, n.x, n.y)}))
-        .sort ((a, b) => a.dist - b.dist);
-      return candidates.slice (0, 2).map (c => ({from: nodeId, to: c.id}));
-    },
-    getLabel (_node) {
-      return 'LINK+';
-    },
-    getTooltipExtra (_node) {
-      return '+2 CONEXIONES EXTRA';
     },
   },
   {
@@ -123,16 +85,16 @@ export const COMPONENT_DEFS = [
     desc: 'x2 mult en este nodo',
     price: 12,
     rarity: 'rare',
-    symbol: '×', // ×
-    color: '#ffe156', // amarillo
-    ringStyle: 'mult', // anillo doble pulsante
-    apply (node, routeScore) {
-      return {addMult: 2.0};
+    symbol: '×',
+    color: '#ffe156',
+    ringStyle: 'mult',
+    effect(_node) {
+      return { addMult: 2.0 };
     },
-    getLabel (node) {
+    getLabel(node) {
       return `${node.dieValue}x2=${node.dieValue * 2}`;
     },
-    getTooltipExtra (node) {
+    getTooltipExtra(node) {
       return node.dieValue
         ? `AHORA: ${node.dieValue} x2 = ${node.dieValue * 2}`
         : null;
@@ -144,41 +106,22 @@ export const COMPONENT_DEFS = [
     desc: 'x5 mult pero se destruye en 2 usos',
     price: 12,
     rarity: 'rare',
-    symbol: '☢', // radiactivo
-    color: '#ff4060', // rojo
-    ringStyle: 'danger', // parpadeo de advertencia + contador
+    symbol: '☢',
+    color: '#ff4060',
+    ringStyle: 'danger',
     usesLeft: 2,
-    apply (node) {
-      if (this.usesLeft > 0) {
-        this.usesLeft--;
-        return {addMult: 5.0};
-      }
-      return {destroy: true};
+    effect(_node) {
+      if (this.usesLeft > 0) return { addMult: 5.0 };
+      return {};
     },
-    getLabel (_node) {
+    onScore(_node) {
+      if (this.usesLeft > 0) this.usesLeft--;
+    },
+    getLabel(_node) {
       return `x5 [${this.usesLeft}]`;
     },
-    getTooltipExtra (_node) {
+    getTooltipExtra(_node) {
       return `USOS: ${this.usesLeft || 0}/2`;
-    },
-  },
-  {
-    id: 'splitter',
-    name: 'Divisor',
-    desc: 'La corriente toma TODAS las rutas desde este nodo',
-    price: 9,
-    rarity: 'rare',
-    symbol: '✦', // estrella
-    color: '#b040ff', // purpura
-    ringStyle: 'radial', // rayos saliendo hacia todos los vecinos
-    apply (node) {
-      return {splitCurrent: true};
-    },
-    getLabel (_node) {
-      return 'SPLIT';
-    },
-    getTooltipExtra (_node) {
-      return 'TODA RUTA SUMA';
     },
   },
   {
@@ -187,21 +130,20 @@ export const COMPONENT_DEFS = [
     desc: 'Invierte el valor del dado (1↔N, 2↔N-1...). Rescata tiradas bajas, penaliza altas',
     price: 5,
     rarity: 'common',
-    symbol: '⇌', // flechas invertidas
-    color: '#60a0ff', // azul
-    ringStyle: 'mult', // reutilizado: anillo doble pulsante
-    apply (node) {
+    symbol: '⇌',
+    color: '#60a0ff',
+    ringStyle: 'mult',
+    effect(node) {
       if (!node.dieValue || !node.dieFaces) return {};
       const inverted = node.dieFaces + 1 - node.dieValue;
-      // addFlat = diferencia entre invertido y original
-      return {addFlat: inverted - node.dieValue};
+      return { addFlat: inverted - node.dieValue };
     },
-    getLabel (node) {
+    getLabel(node) {
       if (!node.dieValue) return 'INV';
       const inverted = node.dieFaces + 1 - node.dieValue;
       return `${node.dieValue}>${inverted}`;
     },
-    getTooltipExtra (node) {
+    getTooltipExtra(node) {
       if (!node.dieValue) return null;
       const inverted = node.dieFaces + 1 - node.dieValue;
       return `AHORA: ${node.dieValue} > ${inverted}`;
@@ -213,24 +155,29 @@ export const COMPONENT_DEFS = [
     desc: 'Carga 3 activaciones, luego suelta x3 mult y resetea',
     price: 10,
     rarity: 'rare',
-    symbol: '◉', // target
-    color: '#e0e0ff', // blanco-lavanda
-    ringStyle: 'charge', // barra que se llena con storedValue
-    storedValue: 0, // reutilizado como "carga actual": 0 → 2 → 4 → fire → 0
-    apply (_node) {
+    symbol: '◉',
+    color: '#e0e0ff',
+    ringStyle: 'charge',
+    storedValue: 0,
+    effect(_node) {
+      if (this.storedValue + 2 >= 6) return { addMult: 3.0 };
+      return {};
+    },
+    onScore(_node) {
       this.storedValue += 2;
       if (this.storedValue >= 6) {
         this.storedValue = 0;
-        return {addMult: 3.0};
       }
-      return {};
     },
-    getLabel (_node) {
+    onRoundEnd(_node) {
+      this.storedValue = 0;
+    },
+    getLabel(_node) {
       const step = this.storedValue / 2;
       if (step === 2) return 'CRIT!';
       return `CHG ${step}/3`;
     },
-    getTooltipExtra (_node) {
+    getTooltipExtra(_node) {
       const step = this.storedValue / 2;
       if (step === 2) return 'PROXIMA: x3 MULT';
       return `CARGA: ${step}/3`;

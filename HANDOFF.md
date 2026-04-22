@@ -5,137 +5,129 @@
 
 ## Como esta el proyecto
 
-Wireline va por la version **2.1.2**. El juego funciona y es jugable. Estamos en medio de la **Fase 2 del refactor** (Screen Manager). Ver [README.md](README.md) seccion "Roadmap del refactor" para el plan completo.
+Wireline va por la **v2.2.0**. El juego funciona y es jugable. **Fase 2 del refactor cerrada en lo esencial** (Splash, Menu, Pausa, GameOver, Changelog migradas a clases con mount/unmount). Shop pendiente (ver abajo).
 
 **Nota importante**: el usuario puede trabajar desde dos PCs. Si hay commits recientes en git que no esperabas, es que venian del otro PC. Sincronizar antes de tocar cualquier cosa.
 
 ## Colaboracion con el usuario
 
-El usuario aprende mientras refactoriza. **Importante: tutor-style, explicar WHY antes del WHAT**. El usuario aplica con guia, tu le corriges. Cuando se atasca con sintaxis, no presuponer que sabe JS avanzado — es dev backend que esta aprendiendo frontend.
+El usuario aprende mientras refactoriza. **Tutor-style, WHY antes del WHAT** — pero **codigo concreto primero, explicacion bloque a bloque despues**. No soltar teoria por delante. Analogia que el uso: "es como si me dijeras que escriba una tortilla en ingles, se hacer la tortilla pero no se escribir en ingles".
 
-**Lo que sabe a dia de hoy (lecciones ya cubiertas)**:
-- Clases ES6, constructor, `this`, metodos sin `function`.
+**Regla acordada en esta sesion**: 10 minutos en papel antes de preguntar. Traer **hipotesis**, no problema crudo. Rol de rubber duck, no oraculo. Ver memoria `feedback_user_autonomy.md`.
+
+**Lo que sabe a dia de hoy**:
+- Clases ES6, `constructor`, `this`, metodos, `bind`.
 - `export` / `import` con extension `.js`.
-- Destructuracion en parametros: `constructor ({ onDone })`.
-- `this.metodo = this.metodo.bind(this)` — el truco de fijar `this` a la instancia.
+- Destructuring en parametros.
 - `addEventListener` / `removeEventListener` con referencias estables.
-- `requestAnimationFrame` / `cancelAnimationFrame` (cubierto al extraer el glow del menu).
-- Que `onDone` / `onStart` son callbacks — la Screen no sabe que pasa despues.
-- Concepto de Screen Manager: gestiona que pantalla esta activa, desmonta la anterior al cambiar.
+- `requestAnimationFrame` / `cancelAnimationFrame`.
+- Patron de callbacks (`onDone`, `onStart`, `onClose`).
+- Screen Manager y mount/unmount.
+- El `||` como condicional (operador de coalescencia).
+- Early return / guard clauses.
+- Que `apply()` en el motor era PURO + MUTADOR y por que eso era un problema.
+- Preview vs score / evaluacion pura vs commit.
 
-**Lo que NO quiere tocar**:
-- CSS. Delega en Claude todo lo visual ("te dejare al mando del apartado visual").
+**Lo que NO quiere tocar**: CSS. Delega visuales en Claude.
 
-**Tropiezos recientes a tener presentes**:
-- Confunde con facilidad "crear una pantalla" (instanciar con `new`) con "montarla" (llamar `mount()`). Son dos operaciones distintas y hay que recordarlo.
-- No mira la consola del navegador por defecto. Cuando algo peta, recordarle abrir F12 → Console.
-- ES Modules + strict mode → las variables inexistentes **lanzan ReferenceError**, no son undefined silencioso.
-- Typos en IDs HTML (duplicados, o `btn-tutorial` vs `btn-start`) rompen sin avisar.
-- **Prefiere que NO le sueltes teoria por delante**. Quiere ver codigo concreto primero, explicacion bloque a bloque despues. Se lo dijo textualmente: "es como si me dijeras que escriba una tortilla en ingles, se hacer la tortilla pero no se escribir en ingles".
+**Tropiezos recurrentes a vigilar**:
+- Confunde "crear pantalla" (`new`) con "montarla" (`mount()`).
+- No abre la consola por defecto. Si peta algo, recordarle F12 → Console.
+- ES Modules + strict mode → variables inexistentes lanzan `ReferenceError` (le paso con `dieFaces` a secas en vez de `node.dieFaces`).
+- Typos de IDs HTML rompen sin aviso.
 
-## Que hicimos en la sesion 2026-04-21
+## Que hicimos en la sesion 2026-04-22 (larga, mucha miga)
 
-**1. Arreglar imports rotos tras mover ui/**
-El usuario movio en su IDE `src/ui/` dentro de `src/screens/ui/`. Decidio mantenerlo asi. Actualizados los imports en `Game.js` y los imports relativos dentro de `screens/ui/HUD.js` y `screens/ui/Shop.js`.
+### 1. Memoria migrada a la ruta correcta
+Las memorias previas vivian en el slug del directorio padre (`Proyectos-DEV`). Esta sesion se abrio desde `wireline/` — slug distinto, memoria vacia. Migradas 8 memorias nuevas especificas a esta ruta (user background, teaching mode, no-coauthor, powershell, hard rules, project state, obsidian, handoff).
 
-**2. Vault de Obsidian actualizado**
-Second brain en `/home/javier/Escritorio/Obsidian-Second-Brain/` ahora es multi-proyecto (Lumma + Wireline):
-- `Home.md` reestructurado como indice multi-proyecto.
-- Nuevo: `02-arquitectura/Estructura de Wireline.md`.
-- Nuevo: `03-aprendizaje/Screen Manager Pattern.md`.
+### 2. Cierre de Fase 2
+- `GameOverScreen` extraida con estado dinamico (`round`, `score`, `title`, `victory`).
+- `PauseScreen` extraida con callback `afterClose` para reactivar input.
+- `ChangelogScreen` nueva — modal accesible desde el menu con banner pulsante "vX.X.X IS HERE !!!".
 
-**3. Fase 2 — extraidas SplashScreen y MenuScreen**
-- `src/screens/SplashScreen.js` con `mount`/`unmount`/`onDone`.
-- `src/screens/MenuScreen.js` con botones "Nueva partida" y "Tutorial", glow pulsante cancelado en unmount.
-- `src/main.js` reducido a orquestacion por callbacks.
+Shop pendiente de migrar a API uniforme (`mount`/`unmount` en vez de `open`/`onClose`). Lo hablamos y decidimos aparcarlo.
 
-**4. Fix del parpadeo del tablero al arrancar**
-- `class="hidden"` en `#game-container` en HTML.
-- Regla CSS especifica: `#game-container.hidden { visibility: hidden; opacity: 0; pointer-events: none; }` (NO `display: none` por el dimensionado del canvas).
-- En `Game.start()`: `this.container.classList.remove('hidden'); this.renderer.resize();`.
+### 3. Refactor gordo del ScoringEngine
+Problema detectado: el motor corria la misma logica para preview (colocar dado) y para activar, y los componentes con estado mutable (Condensador, Fusible, Critico) sufrian side-effects silenciosos. El preview gastaba usos del Fusible y cargaba el Critico.
 
-**5. Boton TUTORIAL (placeholder)**
-- Nuevo `id="btn-tutorial"` en HTML.
-- Callback `onTutorial` en `MenuScreen`.
-- `console.log('Tutorial pendiente')` en `main.js`.
+Refactor aplicado:
+- `previewBestRoute(board)` — puro, sin side effects.
+- `scoreBestRoute(board)` — con commit, muta estado solo en la ruta activada.
+- Split por componente: `effect(node)` (calcula) + `onScore(node)` (muta).
+- `_commitRoute` aislado del resto de evaluacion.
+- Fix adicional: el motor **solo llama a `effect`/`onScore` si hay dado en el nodo** (contrato "el componente activa cuando pones un dado encima").
 
-## Que hicimos en la sesion 2026-04-22 (mini, 20 min)
+El usuario siguio la implementacion y acabo encontrando un bug que se me escapo: `onScore` tenia que tener el mismo guard `node.dieValue` en `_commitRoute`. Lo arreglamos juntos.
 
-**1. Creado `src/screens/ScreenManager.js`** (version minima, 12 lineas):
-```js
-export class ScreenManager {
-  constructor () { this.current = null; }
-  show (screen) {
-    if (this.current) this.current.unmount();
-    this.current = screen;
-    screen.mount();
-  }
-}
-```
-Archivo renombrado de `screenManager.js` a `ScreenManager.js` (PascalCase por ser clase).
+### 4. Componentes
+- **Nuevos**: Inversor ($5, common) e Acumulador Critico ($10, rare — carga 3 activaciones, dispara x3 mult).
+- **Eliminados**: Cortocircuito y Divisor. El `splitter` hardcodeado en ScoringEngine tambien limpiado.
+- **Rebalance**: Sobretension pasa de x2 a x3 mult ($4); Amplificador $8→$12; Fusible $8→$12; Sobretension $1→$4.
+- **Bug fix Condensador**: linea `storedValue = dieValue || 0` reseteaba la memoria a 0 cuando el nodo estaba vacio. Refactorizado a `effect` + `onScore` + `onRoundEnd`.
 
-**2. Migrado `src/main.js` para usar el manager**:
-- Nuevo import de `ScreenManager` + `const manager = new ScreenManager()`.
-- Ultima linea: `splash.mount()` → `manager.show(splash)`.
-- En el `onDone` del splash: desaparecieron `splash.unmount()` + `setTimeout`. Queda `manager.show(menu)` directo.
-- El `onStart` del menu **no se toco**: sigue con `menu.unmount()` manual + `setTimeout(() => game.start(), 480)` porque `game` aun no es una Screen.
+### 5. UI/UX
+- Juego a pantalla completa (quitados los caps `max-width: 1400px` y `max-height: 900px`).
+- Panel de controles unificado (`#control-panel`) que agrupa dados + botones con borde cian arriba y abajo, levantado 40px del suelo para que los botones queden mas cerca del tablero.
+- HUD e iconos ampliados (+20-30%) para mejor legibilidad.
+- Modal de desglose (#score-breakdown) ampliado con `min-width: 420px`.
+- **Banner "v2.2.0 IS HERE !!!"** en el menu, pulsante, con sheen animado cian. Clicable → abre ChangelogScreen con las novedades.
+- ChangelogScreen scrollable, entrada `is-latest` destacada con borde cian y badge LATEST amarillo.
 
-**3. Consecuencia a vigilar**: la transicion splash → menu ahora es **simultanea** (cross-fade: splash haciendo fade-out mientras menu hace fade-in). Antes eran secuenciales con `setTimeout(600)`. Como ambos son fondos oscuros deberia verse bien. Si el usuario se queja, añadir asincronia al manager (unmount devuelve promise que se resuelve tras el fade).
-
-**4. Pendiente de probar**: el usuario aun no ha probado el juego tras la migracion. Al retomar, preguntar si el flujo completo funciona (splash → click → menu → nueva partida → partida → pausa → salir al menu → etc.) y diagnosticar si algo peta.
+### 6. Version bump a 2.2.0
+3 sitios sincronizados: `package.json`, `index.html` (splash-sub + menu-footer), `README.md` (header).
 
 ## Estado actual de archivos clave
 
 ```
 src/
-├── main.js               Orquestador via manager (~38 lineas)
-├── Game.js               Sigue mezclando mucho — Fase 3 lo separara
+├── main.js               Orquestador (menu, splash, changelog, manager)
+├── Game.js               Sigue siendo monolito — Fase 3 lo separara
+├── config/
+│   ├── changelog.js      ✅ Nuevo — historial de versiones
+│   ├── componentDefs.js  ✅ 7 componentes (eliminados split y short)
+│   ├── constants.js, dieTypes.js, boardPatterns.js
 ├── screens/
-│   ├── SplashScreen.js   ✅ Extraida
-│   ├── MenuScreen.js     ✅ Extraida
-│   ├── ScreenManager.js  ✅ Creado (version minima)
+│   ├── SplashScreen.js   ✅
+│   ├── MenuScreen.js     ✅ (ahora con onChangelog)
+│   ├── ChangelogScreen.js ✅ Nueva
+│   ├── GameOverScreen.js ✅
+│   ├── PauseScreen.js    ✅
+│   ├── ScreenManager.js  ✅
 │   └── ui/               HUD, Modal, Shop (widgets DOM)
-├── entities/ config/ systems/ lib/  Intactas
-index.html                #game-container arranca con class="hidden"
-css/style.css             Regla nueva para #game-container.hidden
+├── entities/, systems/, lib/
+└── systems/ScoringEngine.js  ✅ Refactorizado preview/score
 ```
 
 ## Que viene despues
 
-**Siguiente sesion (en casa, otro PC)**:
+**El usuario ha dicho que despues de cerrar esta sesion me pedira "algo gordo pero necesario"**. No se que es. Al retomar, esperar a que lo explique.
 
-1. **Probar primero** que la migracion del manager no rompio nada. Si peta, F12 console y diagnosticar.
-2. **Extraer `PauseScreen`** o **`GameOverScreen`** (cortas, mismo patron que ya conoce). Se registran en el flow con `manager.show(...)`.
-3. Cuando esten las pantallas basicas migradas, valorar si añadir async al manager (promesas en unmount) o seguir con setTimeout manuales.
+**Pendiente conocido**:
+1. **Shop** a API uniforme (`mount`/`unmount`). Trabajo medio, 30 min.
+2. **Fase 3**: separar logica/presentacion en `Game.js`. Incluye crear `GameScreen` que envuelva `#game-container`. 3-5 sesiones.
+3. **Tutorial real** (ahora es placeholder que hace `console.log`).
+4. **Generacion procedural de zonas** (idea que planteo el usuario).
 
-**Fases restantes** (contexto largo):
-
-| Fase | Que falta | Sesiones aprox |
-|---|---|---|
-| Fase 2 (en curso) | GameOverScreen + VictoryScreen + PauseScreen + (tal vez) GameScreen | 2-3 |
-| Fase 3 | Separar logica/presentacion en `Game.js` | 3-5 |
-| Fase 4 | Estado unico + event bus | 3-5 |
-| Fase 5 | Bugs conocidos + limpieza CSS | 1-2 |
-
-**Ideas de jugabilidad en discusion** (mencionadas por el usuario, no empezadas):
-- **Generacion procedural aleatoria**. El usuario lo planteo. Hay dos versiones — MVP viable en 2-3 sesiones (una zona "infinita" con patrones aleatorios) o profunda (requiere Fase 4). Pendiente de discusion de alcance cuando retomemos.
-
-## Bugs conocidos pendientes
-
+**Bugs conocidos pendientes**:
 - **Dinero negativo en shop**: closure obsoleto en `renderComponents` de `src/screens/ui/Shop.js`. Diferido a Fase 5.
-
-## Referencias utiles
-
-- `README.md` del proyecto.
-- Vault Obsidian en `/home/javier/Escritorio/Obsidian-Second-Brain/` (memoria `reference_obsidian_vault.md`).
-- Memoria en `/home/javier/.claude/projects/-home-javier-Personal-Wireline/memory/`.
+- `_combineAllRoutes` en `ScoringEngine` es codigo muerto desde que eliminamos el Divisor. Se puede borrar limpio.
 
 ## Reglas duras del usuario
 
-- **Nunca usa `ç`** — si aparece, es dedazo (Enter pegado). Corregir tacitamente.
+- **Nunca usa `ç`** — dedazo (Enter pegado). Corregir tacitamente.
 - **Handles publicos**: `javatoDev` (dev) y `javatoDev (prod. ntr)` para musica. NO "javier".
-- **La musica del menu** (`public/audio/theme.mp3`) es composicion propia en FL Studio.
-- **Distribucion**: itch.io HTML5 como primario, Electron Win+Linux en el futuro. No Mac, no Rust.
+- **Musica del menu**: composicion propia en FL Studio. Respetar autoria.
+- **Distribucion**: itch.io HTML5 primario, Electron Win+Linux despues. No Mac, no Rust.
+- **Commits SIN Co-Authored-By** de Claude.
+- **PowerShell 5.1**: no soporta `&&`, usar `;` en comandos manuales.
+
+## Referencias
+
+- `README.md` del proyecto — arquitectura, convenciones, como añadir componentes.
+- `src/config/changelog.js` — historial de versiones.
+- Vault Obsidian del usuario (multi-proyecto) — ver memoria `reference_obsidian_vault.md`.
+- Memorias en `.claude/projects/c--Users-alcat-OneDrive-Desktop-Proyectos-DEV-wireline/memory/`.
 
 ---
 

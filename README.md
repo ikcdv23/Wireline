@@ -1,6 +1,6 @@
 # Wireline
 
-> **v2.1.1** · Vanilla JS + Canvas 2D + Web Audio API · Build con Vite
+> **v2.2.0** · Vanilla JS + Canvas 2D + Web Audio API · Build con Vite
 
 Roguelike de dados y circuitos. Coloca dados en los nodos del tablero, activa la corriente y maximiza la puntuacion con componentes que alteran el scoring. Inspirado en Balatro.
 

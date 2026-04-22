@@ -81,8 +81,7 @@ export const BOARD_PATTERNS = {
       [1, 4], [1, 5], [2, 5], [2, 6], [3, 6], [3, 7],
       [4, 8], [5, 8], [5, 9], [6, 9], [6, 10], [7, 10],
       [8, 11], [9, 11], [10, 11],
-      // Conexiones extra cruzadas — caos
-      [1, 2], [2, 3], [4, 5], [5, 6], [6, 7], [8, 9], [9, 10],
+      // Conexiones extra cruzadas — caos 
     ],
   },
 };

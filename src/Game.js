@@ -251,7 +251,7 @@ export class Game {
   }
 
   updateRoutePreview() {
-    const result = this.scoring.findBestRoute(this.board);
+    const result = this.scoring.previewBestRoute(this.board);
     this.renderer.previewResult = result;
   }
 
@@ -288,7 +288,7 @@ export class Game {
     this.juice.freezeFrame(100);
     this.juice.flash(CONFIG.COLORS.ACCENT_CYAN, 80, 0.08);
 
-    const result = this.scoring.findBestRoute(this.board);
+    const result = this.scoring.scoreBestRoute(this.board);
 
     if (result.route.length === 0) {
       this.resolveActivation(0);

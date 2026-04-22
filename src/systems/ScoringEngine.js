@@ -1,58 +1,49 @@
-// Pathfinding + calculo de puntuacion. Recorre el grafo con DFS y evalua cada
-// ruta aplicando los efectos de los componentes colocados.
-
 import { CONFIG, NODE_SOURCE, NODE_OUTPUT } from '../config/constants.js';
 
 export class ScoringEngine {
-  // Encuentra la mejor ruta (mayor puntuacion) desde fuente a salida.
-  findBestRoute(board) {
+  previewBestRoute(board) {
+    return this._resolveBestRoute(board).result;
+  }
+
+  scoreBestRoute(board) {
+    const { result, activatedRoutes } = this._resolveBestRoute(board);
+    for (const route of activatedRoutes) {
+      this._commitRoute(board, route);
+    }
+    return result;
+  }
+
+  getTarget(roundNumber) {
+    return Math.round(
+      CONFIG.SCORING.BASE_TARGET *
+      Math.pow(CONFIG.SCORING.TARGET_GROWTH, roundNumber - 1),
+    );
+  }
+
+  _resolveBestRoute(board) {
     const source = board.getSourceNode();
     const output = board.getOutputNode();
     if (!source || !output) {
-      return { route: [], score: 0, mult: 1, details: [], total: 0, baseScore: 0 };
+      return { result: this._emptyResult(), activatedRoutes: [] };
     }
 
-    // Construir grafo con aristas extra de componentes (cortocircuito)
-    const edges = this.buildEdges(board);
-
+    const edges = this._buildEdges(board);
     const allRoutes = [];
-    this.dfs(
-      board,
-      edges,
-      source.id,
-      output.id,
-      [source.id],
-      new Set([source.id]),
-      allRoutes,
-    );
+    this._dfs(edges, source.id, output.id, [source.id], new Set([source.id]), allRoutes);
 
     if (allRoutes.length === 0) {
-      return { route: [], score: 0, mult: 1, details: [], total: 0, baseScore: 0 };
+      return { result: this._emptyResult(), activatedRoutes: [] };
     }
 
-    const hasSplitter = board.nodes.some(
-      (n) => n.component && n.component.id === 'splitter',
-    );
-
-    if (hasSplitter) {
-      // Divisor: sumar TODAS las rutas sin repetir nodos
-      return this.evaluateWithSplitter(board, allRoutes);
-    }
-
-    // Sin divisor: la mejor ruta unica gana
-    let bestResult = null;
-    for (const route of allRoutes) {
-      const result = this.evaluateRoute(board, route);
-      if (!bestResult || result.total > bestResult.total) {
-        bestResult = result;
-      }
-    }
-
-    return bestResult;
+    const best = this._pickBestRoute(board, allRoutes);
+    return { result: best, activatedRoutes: [best.route] };
   }
 
-  // Construir lista de aristas incluyendo las extra de componentes
-  buildEdges(board) {
+  _emptyResult() {
+    return { route: [], score: 0, mult: 1, details: [], total: 0, baseScore: 0 };
+  }
+
+  _buildEdges(board) {
     const edges = [...board.edges];
 
     for (const node of board.nodes) {
@@ -60,13 +51,11 @@ export class ScoringEngine {
         const extraEdges = node.component.modifyEdges(board, node.id);
         for (const e of extraEdges) {
           const exists = edges.some(
-            (ex) =>
+            ex =>
               (ex.from === e.from && ex.to === e.to) ||
               (ex.from === e.to && ex.to === e.from),
           );
-          if (!exists) {
-            edges.push(e);
-          }
+          if (!exists) edges.push(e);
         }
       }
     }
@@ -74,7 +63,7 @@ export class ScoringEngine {
     return edges;
   }
 
-  getNeighborsFromEdges(edges, nodeId) {
+  _getNeighborsFromEdges(edges, nodeId) {
     const ids = [];
     for (const edge of edges) {
       if (edge.from === nodeId) ids.push(edge.to);
@@ -83,25 +72,25 @@ export class ScoringEngine {
     return ids;
   }
 
-  dfs(board, edges, currentId, targetId, path, visited, allRoutes) {
+  _dfs(edges, currentId, targetId, path, visited, allRoutes) {
     if (currentId === targetId) {
       allRoutes.push([...path]);
       return;
     }
 
-    const neighborIds = this.getNeighborsFromEdges(edges, currentId);
+    const neighborIds = this._getNeighborsFromEdges(edges, currentId);
     for (const nid of neighborIds) {
       if (!visited.has(nid)) {
         visited.add(nid);
         path.push(nid);
-        this.dfs(board, edges, nid, targetId, path, visited, allRoutes);
+        this._dfs(edges, nid, targetId, path, visited, allRoutes);
         path.pop();
         visited.delete(nid);
       }
     }
   }
 
-  evaluateRoute(board, route) {
+  _evaluateRoute(board, route) {
     let baseScore = 0;
     let mult = CONFIG.SCORING.BASE_MULT;
     const details = [];
@@ -111,12 +100,13 @@ export class ScoringEngine {
       if (node.type === NODE_SOURCE || node.type === NODE_OUTPUT) continue;
 
       let dieValue = node.dieValue || 0;
+      const comp = node.component;
 
-      if (node.component && node.component.apply) {
-        const effect = node.component.apply(node);
-        if (effect.addMult) mult *= effect.addMult;
-        if (effect.addFlat) dieValue += effect.addFlat;
-        if (effect.doubleDie) dieValue *= 2;
+      if (node.dieValue && comp && comp.effect) {
+        const fx = comp.effect(node);
+        if (fx.addMult) mult *= fx.addMult;
+        if (fx.addFlat) dieValue += fx.addFlat;
+        if (fx.doubleDie) dieValue *= 2;
       }
 
       baseScore += dieValue;
@@ -127,20 +117,27 @@ export class ScoringEngine {
     }
 
     const total = Math.round(baseScore * mult);
-
     return { route, baseScore, mult, total, details };
   }
 
-  // Divisor: sumar score de todas las rutas, contando cada nodo solo una vez.
-  evaluateWithSplitter(board, allRoutes) {
+  _pickBestRoute(board, allRoutes) {
+    let best = null;
+    for (const route of allRoutes) {
+      const result = this._evaluateRoute(board, route);
+      if (!best || result.total > best.total) best = result;
+    }
+    return best;
+  }
+
+  _combineAllRoutes(board, allRoutes) {
     let totalBaseScore = 0;
     let maxMult = CONFIG.SCORING.BASE_MULT;
     const countedNodes = new Set();
     const allDetails = [];
-    let bestRoute = allRoutes[0]; // Para la animacion usamos la mejor ruta
+    let bestResult = null;
 
     for (const route of allRoutes) {
-      const result = this.evaluateRoute(board, route);
+      const result = this._evaluateRoute(board, route);
 
       if (result.mult > maxMult) maxMult = result.mult;
 
@@ -152,15 +149,15 @@ export class ScoringEngine {
         }
       }
 
-      if (result.total > this.evaluateRoute(board, bestRoute).total) {
-        bestRoute = route;
+      if (!bestResult || result.total > bestResult.total) {
+        bestResult = result;
       }
     }
 
     const total = Math.round(totalBaseScore * maxMult);
 
     return {
-      route: bestRoute,
+      route: bestResult.route,
       baseScore: totalBaseScore,
       mult: maxMult,
       total,
@@ -169,10 +166,12 @@ export class ScoringEngine {
     };
   }
 
-  getTarget(roundNumber) {
-    return Math.round(
-      CONFIG.SCORING.BASE_TARGET *
-        Math.pow(CONFIG.SCORING.TARGET_GROWTH, roundNumber - 1),
-    );
+  _commitRoute(board, route) {
+    for (const nodeId of route) {
+      const node = board.getNode(nodeId);
+      if (node.type === NODE_SOURCE || node.type === NODE_OUTPUT) continue;
+      const comp = node.component;
+      if (comp && comp.onScore) comp.onScore(node);
+    }
   }
 }
