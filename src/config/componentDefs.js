@@ -55,7 +55,7 @@ export const COMPONENT_DEFS = [
     id: 'overload',
     name: 'Sobretension',
     desc: 'Dispara 2 veces solo si el dado es maximo en su tipo (10 en D10, 12 en D12...)',
-    price: 1,
+    price: 4,
     rarity: 'uncommon',
     symbol: '⇅', // flechas verticales
     color: '#ff39a8', // rosa
@@ -121,7 +121,7 @@ export const COMPONENT_DEFS = [
     id: 'amplifier',
     name: 'Amplificador',
     desc: 'x2 mult en este nodo',
-    price: 8,
+    price: 12,
     rarity: 'rare',
     symbol: '×', // ×
     color: '#ffe156', // amarillo
@@ -142,7 +142,7 @@ export const COMPONENT_DEFS = [
     id: 'fuse',
     name: 'Fusible',
     desc: 'x5 mult pero se destruye en 2 usos',
-    price: 8,
+    price: 12,
     rarity: 'rare',
     symbol: '☢', // radiactivo
     color: '#ff4060', // rojo
@@ -179,6 +179,61 @@ export const COMPONENT_DEFS = [
     },
     getTooltipExtra (_node) {
       return 'TODA RUTA SUMA';
+    },
+  },
+  {
+    id: 'inverter',
+    name: 'Inversor',
+    desc: 'Invierte el valor del dado (1↔N, 2↔N-1...). Rescata tiradas bajas, penaliza altas',
+    price: 5,
+    rarity: 'common',
+    symbol: '⇌', // flechas invertidas
+    color: '#60a0ff', // azul
+    ringStyle: 'mult', // reutilizado: anillo doble pulsante
+    apply (node) {
+      if (!node.dieValue || !node.dieFaces) return {};
+      const inverted = node.dieFaces + 1 - node.dieValue;
+      // addFlat = diferencia entre invertido y original
+      return {addFlat: inverted - node.dieValue};
+    },
+    getLabel (node) {
+      if (!node.dieValue) return 'INV';
+      const inverted = node.dieFaces + 1 - node.dieValue;
+      return `${node.dieValue}>${inverted}`;
+    },
+    getTooltipExtra (node) {
+      if (!node.dieValue) return null;
+      const inverted = node.dieFaces + 1 - node.dieValue;
+      return `AHORA: ${node.dieValue} > ${inverted}`;
+    },
+  },
+  {
+    id: 'critical',
+    name: 'Acumulador Critico',
+    desc: 'Carga 3 activaciones, luego suelta x3 mult y resetea',
+    price: 10,
+    rarity: 'rare',
+    symbol: '◉', // target
+    color: '#e0e0ff', // blanco-lavanda
+    ringStyle: 'charge', // barra que se llena con storedValue
+    storedValue: 0, // reutilizado como "carga actual": 0 → 2 → 4 → fire → 0
+    apply (_node) {
+      this.storedValue += 2;
+      if (this.storedValue >= 6) {
+        this.storedValue = 0;
+        return {addMult: 3.0};
+      }
+      return {};
+    },
+    getLabel (_node) {
+      const step = this.storedValue / 2;
+      if (step === 2) return 'CRIT!';
+      return `CHG ${step}/3`;
+    },
+    getTooltipExtra (_node) {
+      const step = this.storedValue / 2;
+      if (step === 2) return 'PROXIMA: x3 MULT';
+      return `CARGA: ${step}/3`;
     },
   },
 ];

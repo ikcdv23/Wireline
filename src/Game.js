@@ -12,6 +12,8 @@ import { JuiceEngine } from './systems/JuiceEngine.js';
 import { HUD } from './screens/ui/HUD.js';
 import { Modal } from './screens/ui/Modal.js';
 import { Shop } from './screens/ui/Shop.js';
+import { GameOverScreen } from './screens/GameOverScreen.js';
+import { PauseScreen } from './screens/PauseScreen.js';
 import { startMenuMusic } from './systems/MenuMusic.js';
 
 const ZONE_PATTERNS = ['prototipo', 'produccion', 'sobrecarga', 'singularidad'];
@@ -59,13 +61,21 @@ export class Game {
       (die, node) => this.onDieRemoved(die, node),
     );
 
+    // Pantallas modales (game over / victoria / pausa)
+    this.gameOverScreen = new GameOverScreen({
+      onBackToMenu: () => this.goToMenu(),
+      audio: this.audio,
+    });
+    this.pauseScreen = new PauseScreen({
+      onResume: () => this.resume(),
+      onQuit: () => this.quitToMenu(),
+      audio: this.audio,
+    });
+
     // Botones
     this.hud.els.btnRoll.addEventListener('click', () => this.rollDice());
     this.hud.els.btnConfirm.addEventListener('click', () => this.activateCircuit());
-    document.getElementById('btn-restart').addEventListener('click', () => this.goToMenu());
     document.getElementById('btn-pause').addEventListener('click', () => this.pause());
-    document.getElementById('btn-resume').addEventListener('click', () => this.resume());
-    document.getElementById('btn-quit').addEventListener('click', () => this.quitToMenu());
 
     this.paused = false;
     this.renderLoop = this.renderLoop.bind(this);
@@ -103,18 +113,20 @@ export class Game {
     this.paused = true;
     this.input.disable();
 
-    const info = document.getElementById('pause-info');
     const zone = CONFIG.ZONES[this.state.zone] || CONFIG.ZONES[0];
-    info.innerHTML = `ZONA: ${zone.name} &nbsp;■&nbsp; RONDA: ${this.state.round}<br>VIDAS: ${'♥'.repeat(this.state.lives)} &nbsp;■&nbsp; $${this.state.money}`;
-
-    Modal.open('pause-overlay', this.audio);
+    this.pauseScreen.mount({
+      zone: zone.name,
+      round: this.state.round,
+      lives: this.state.lives,
+      money: this.state.money,
+    });
   }
 
   resume() {
     if (!this.paused) return;
     this.paused = false;
 
-    Modal.close('pause-overlay', this.audio, () => {
+    this.pauseScreen.unmount(() => {
       if (this.state.phase === 'placing') {
         this.input.enable();
       }
@@ -123,17 +135,12 @@ export class Game {
 
   quitToMenu() {
     this.paused = false;
-    Modal.close('pause-overlay', this.audio, () => {
-      this.goToMenu();
-    });
+    this.pauseScreen.unmount(() => this.goToMenu());
   }
 
   goToMenu() {
-    // Cerrar cualquier overlay abierto
-    Modal.close('gameover-overlay', this.audio);
-    const govPanel = document.getElementById('gameover-panel');
-    govPanel.querySelector('h2').textContent = 'CORTOCIRCUITO';
-    govPanel.classList.remove('victory');
+    // Cerrar la pantalla de game over si estaba abierta
+    this.gameOverScreen.unmount();
 
     // Resetear estado
     this.board = new Board(ZONE_PATTERNS[0]);
@@ -561,9 +568,10 @@ export class Game {
     this.juice.doubleFlash(CONFIG.COLORS.ACCENT_RED, 500);
 
     setTimeout(() => {
-      document.getElementById('final-round').textContent = this.state.round;
-      document.getElementById('final-score').textContent = this.state.totalScore;
-      Modal.open('gameover-overlay', this.audio);
+      this.gameOverScreen.mount({
+        round: this.state.round,
+        score: this.state.totalScore,
+      });
     }, 1200);
   }
 
@@ -631,12 +639,12 @@ export class Game {
     setTimeout(() => this.juice.spawnConfetti(20), 1300);
 
     setTimeout(() => {
-      const panel = document.getElementById('gameover-panel');
-      panel.querySelector('h2').textContent = '★ SINGULARIDAD ALCANZADA ★';
-      panel.classList.add('victory');
-      document.getElementById('final-round').textContent = this.state.round;
-      document.getElementById('final-score').textContent = this.state.totalScore;
-      Modal.open('gameover-overlay', this.audio);
+      this.gameOverScreen.mount({
+        round: this.state.round,
+        score: this.state.totalScore,
+        title: '★ SINGULARIDAD ALCANZADA ★',
+        victory: true,
+      });
     }, 1500);
   }
 }

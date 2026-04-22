@@ -104,8 +104,6 @@ body {
     position: relative;
     width: 100vw;
     height: 100vh;
-    max-width: 1400px;
-    max-height: 900px;
     background: var(--bg-dark);
     transition: transform 0.05s steps(2);
     overflow: hidden;
@@ -154,7 +152,7 @@ body {
     top: 62px;
     left: 0;
     width: 100%;
-    height: calc(100% - 192px);
+    height: calc(100% - 262px);
     z-index: 2;
 }
 
@@ -289,11 +287,25 @@ body {
    DICE TRAY
    ============================================================ */
 
-#dice-tray-wrap {
+#control-panel {
     position: absolute;
-    bottom: 68px;
+    bottom: 40px;
     left: 0;
     width: 100%;
+    padding: 10px 16px 12px;
+    background: linear-gradient(180deg,
+        rgba(10, 10, 20, 0.6) 0%,
+        rgba(10, 10, 20, 0.92) 40%);
+    border-top: 2px solid var(--accent-cyan);
+    border-bottom: 2px solid var(--accent-cyan);
+    box-shadow: 0 -8px 24px rgba(0, 229, 255, 0.08);
+    z-index: 5;
+}
+
+#dice-tray-wrap {
+    position: static;
+    width: 100%;
+    margin-bottom: 10px;
     pointer-events: none;
 }
 
@@ -472,9 +484,7 @@ body {
    ============================================================ */
 
 #action-bar {
-    position: absolute;
-    bottom: 10px;
-    left: 0;
+    position: static;
     width: 100%;
     display: flex;
     justify-content: center;
@@ -1436,11 +1446,11 @@ body {
 
 @media (max-height: 600px) {
     #hud { height: 46px; padding: 4px 12px; }
-    #dice-tray-wrap { bottom: 52px; }
+    #control-panel { padding: 8px 12px 10px; }
+    #dice-tray-wrap { margin-bottom: 6px; }
     #dice-tray { height: 65px; }
     .die { width: 46px; height: 46px; }
     .die-value { font-size: 14px; }
-    #action-bar { bottom: 6px; }
     .action-btn { padding: 8px 14px; font-size: 7px; }
-    #board-canvas { top: 46px; height: calc(100% - 168px); }
+    #board-canvas { top: 46px; height: calc(100% - 190px); }
 }
