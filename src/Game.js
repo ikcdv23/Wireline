@@ -379,27 +379,12 @@ export class Game {
       this.juice.doubleFlash(CONFIG.COLORS.ACCENT_GREEN, 300);
       this.juice.freezeFrame(120);
 
-      // Dados sobrantes = dinero (con efecto por dado)
       if (remaining.length > 0) {
-        const totalBonus = remaining.reduce((sum, d) => sum + d.value, 0);
-        remaining.forEach((d, i) => {
-          setTimeout(() => {
-            this.renderer.addFloatingText(
-              400 - 40 + i * 20, 490,
-              `+$${d.value}`,
-              CONFIG.COLORS.ACCENT_YELLOW,
-            );
-            this.audio.playScoreTick(i, remaining.length);
-          }, 300 + i * 150);
-        });
-        setTimeout(() => {
-          this.state.money += totalBonus;
-          this.hud.update(this.state);
-        }, 300 + remaining.length * 150);
+        this.animateDiceToMoney(remaining);
       }
 
       this.runEndOfRound();
-      setTimeout(() => this.advanceRound(), 1200 + remaining.length * 150);
+      setTimeout(() => this.advanceRound(), 1500 + remaining.length * 200);
     } else if (remaining.length > 0) {
       // === Quedan dados — siguiente tiro ===
       this.juice.shake(4, 120);
@@ -513,9 +498,10 @@ export class Game {
     this.state.round++;
     this.state.target = this.scoring.getTarget(this.state.round);
 
-    const showShop = true;
+    const hadInterest = this.applyInterest();
+    const shopDelay = hadInterest ? 900 : 0;
 
-    if (showShop) {
+    setTimeout(() => {
       this.state.phase = 'shop';
       this.hud.update(this.state);
       this.shop.open(
@@ -529,9 +515,111 @@ export class Game {
           this.startNewRound();
         },
       );
-    } else {
-      this.startNewRound();
+    }, shopDelay);
+  }
+
+  applyInterest() {
+    const interest = Math.min(
+      Math.floor(this.state.money / CONFIG.PLAYER.INTEREST_PER),
+      CONFIG.PLAYER.INTEREST_MAX,
+    );
+    if (interest <= 0) return false;
+
+    this.state.money += interest;
+    this.hud.update(this.state);
+
+    this.renderer.addFloatingText(
+      640, 80,
+      `INTERES +$${interest}`,
+      CONFIG.COLORS.ACCENT_GREEN,
+    );
+    this.audio.playScoreTick(0, 1);
+
+    const moneyDisplay = document.getElementById('money-display');
+    const moneyIcon = document.getElementById('hud-money-icon');
+    moneyDisplay.classList.add('coin-pop');
+    moneyIcon.classList.add('coin-pop');
+    setTimeout(() => {
+      moneyDisplay.classList.remove('coin-pop');
+      moneyIcon.classList.remove('coin-pop');
+    }, 400);
+
+    return true;
+  }
+
+  animateDiceToMoney(remaining) {
+    remaining.forEach((die, i) => {
+      setTimeout(() => this.flyDieToMoney(die, i, remaining.length), 250 + i * 170);
+    });
+  }
+
+  flyDieToMoney(die, index, total) {
+    const dieEl = this.diceTray.querySelector(`[data-die-id="${die.id}"]`);
+    if (!dieEl) {
+      this.state.money += die.value;
+      this.hud.update(this.state);
+      return;
     }
+
+    const containerRect = this.container.getBoundingClientRect();
+    const dieRect = dieEl.getBoundingClientRect();
+
+    const startX = dieRect.left - containerRect.left;
+    const startY = dieRect.top - containerRect.top;
+    const dieWidth = dieRect.width;
+    const dieHeight = dieRect.height;
+
+    const centerX = (this.container.clientWidth - dieWidth) / 2;
+    const centerY = (this.container.clientHeight - dieHeight) / 2;
+
+    const clone = dieEl.cloneNode(true);
+    clone.classList.add('flying-die');
+    clone.style.left = startX + 'px';
+    clone.style.top = startY + 'px';
+    this.container.appendChild(clone);
+    dieEl.style.opacity = '0';
+
+    clone.offsetHeight;
+    clone.style.transition =
+      'left 0.55s cubic-bezier(0.22, 0.7, 0.3, 1.3),' +
+      'top 0.55s cubic-bezier(0.22, 0.7, 0.3, 1.3),' +
+      'transform 0.55s cubic-bezier(0.22, 0.7, 0.3, 1.3)';
+    clone.style.left = centerX + 'px';
+    clone.style.top = centerY + 'px';
+    clone.style.transform = 'scale(1.5) rotate(540deg)';
+
+    setTimeout(() => {
+      const color = die.color || CONFIG.COLORS.ACCENT_YELLOW;
+      const explosionX = centerX + dieWidth / 2;
+      const explosionY = centerY + dieHeight / 2;
+
+      this.juice.spawnNodeBurst(explosionX, explosionY, color, 14);
+      this.juice.spawnNodeBurst(explosionX, explosionY, CONFIG.COLORS.ACCENT_YELLOW, 8);
+      this.juice.shake(3, 120);
+      this.audio.playScoreTick(index, total);
+
+      clone.style.transition = 'opacity 0.25s, transform 0.25s';
+      clone.style.opacity = '0';
+      clone.style.transform = 'scale(0.4) rotate(720deg)';
+
+      this.state.money += die.value;
+      this.hud.update(this.state);
+
+      const moneyDisplay = document.getElementById('money-display');
+      const moneyIcon = document.getElementById('hud-money-icon');
+      moneyDisplay.classList.remove('coin-pop');
+      moneyIcon.classList.remove('coin-pop');
+      moneyDisplay.offsetHeight;
+      moneyDisplay.classList.add('coin-pop');
+      moneyIcon.classList.add('coin-pop');
+      setTimeout(() => {
+        moneyDisplay.classList.remove('coin-pop');
+        moneyIcon.classList.remove('coin-pop');
+      }, 400);
+
+      setTimeout(() => clone.remove(), 260);
+      if (dieEl.parentNode) dieEl.remove();
+    }, 580);
   }
 
   retryRound() {

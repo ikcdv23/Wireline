@@ -1457,6 +1457,247 @@ body {
 }
 
 /* ============================================================
+   FLYING DICE + COIN POP
+   ============================================================ */
+
+.flying-die {
+    position: absolute;
+    z-index: 20;
+    pointer-events: none;
+    will-change: transform, left, top;
+}
+
+#money-display.coin-pop,
+#hud-money-icon.coin-pop {
+    animation: coin-pop 0.4s ease-out;
+}
+
+@keyframes coin-pop {
+    0% {
+        text-shadow: 2px 2px 0px #665500;
+        color: var(--accent-yellow);
+    }
+    40% {
+        text-shadow: 0 0 16px #ffd700, 0 0 32px #ffd700, 2px 2px 0px #665500;
+        color: #ffffff;
+    }
+    100% {
+        text-shadow: 2px 2px 0px #665500;
+        color: var(--accent-yellow);
+    }
+}
+
+/* ============================================================
+   TUTORIAL OVERLAY
+   ============================================================ */
+
+#tutorial-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 500;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+#tutorial-overlay.visible {
+    opacity: 1;
+}
+
+#tutorial-overlay.hidden {
+    display: none;
+}
+
+#tutorial-overlay.no-target {
+    background: rgba(3, 3, 10, 0.88);
+    pointer-events: auto;
+}
+
+#tutorial-spotlight {
+    position: fixed;
+    border: 2px solid var(--accent-cyan);
+    border-radius: 8px;
+    pointer-events: none;
+    transition:
+        top 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+        left 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+        width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+        height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: spotlight-glow 2.2s ease-in-out infinite;
+}
+
+#tutorial-spotlight.hidden {
+    display: none;
+}
+
+@keyframes spotlight-glow {
+    0%, 100% {
+        box-shadow:
+            0 0 0 9999px rgba(3, 3, 10, 0.82),
+            0 0 18px var(--accent-cyan),
+            inset 0 0 14px #00e5ff55;
+    }
+    50% {
+        box-shadow:
+            0 0 0 9999px rgba(3, 3, 10, 0.82),
+            0 0 36px var(--accent-cyan),
+            inset 0 0 22px #00e5ff88;
+    }
+}
+
+#tutorial-tooltip {
+    position: fixed;
+    pointer-events: auto;
+    background: var(--bg-panel);
+    border: 2px solid var(--accent-cyan);
+    padding: 24px 30px 20px;
+    width: 460px;
+    max-width: 90vw;
+    z-index: 502;
+    font-family: 'Press Start 2P', monospace;
+    box-shadow: 6px 6px 0 #000, 0 0 32px rgba(0, 229, 255, 0.25);
+    transition:
+        top 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+        left 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#tutorial-tooltip.centered {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    transition: none;
+}
+
+.tutorial-deco {
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    height: 2px;
+    pointer-events: none;
+}
+
+.tutorial-deco-bottom {
+    top: auto;
+    bottom: -2px;
+}
+
+.tutorial-corner-tl,
+.tutorial-corner-tr,
+.tutorial-corner-bl,
+.tutorial-corner-br {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--accent-cyan);
+}
+
+.tutorial-corner-tl { top: -2px; left: -2px; border-right: none; border-bottom: none; }
+.tutorial-corner-tr { top: -2px; right: -2px; border-left: none; border-bottom: none; }
+.tutorial-corner-bl { bottom: -2px; left: -2px; border-right: none; border-top: none; }
+.tutorial-corner-br { bottom: -2px; right: -2px; border-left: none; border-top: none; }
+
+.tutorial-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #00e5ff33;
+}
+
+#tutorial-progress {
+    font-size: 8px;
+    color: #05050c;
+    background: var(--accent-cyan);
+    padding: 4px 8px;
+    letter-spacing: 1px;
+    box-shadow: 0 0 10px var(--accent-cyan);
+    flex-shrink: 0;
+}
+
+#tutorial-title {
+    font-size: 12px;
+    color: var(--accent-cyan);
+    letter-spacing: 2px;
+    margin: 0;
+    text-shadow: 2px 2px 0 #005566, 0 0 10px var(--accent-cyan);
+}
+
+#tutorial-text {
+    font-size: 10px;
+    line-height: 1.9;
+    color: var(--text-primary);
+    letter-spacing: 0.5px;
+    margin: 0 0 22px 0;
+}
+
+.tutorial-buttons {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.tutorial-btn {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    padding: 10px 14px;
+    border: 2px solid var(--accent-cyan);
+    background: transparent;
+    color: var(--accent-cyan);
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.12s steps(2);
+    text-shadow: 1px 1px 0 #000;
+}
+
+.tutorial-btn:hover {
+    background: #00e5ff22;
+    box-shadow: 0 0 12px var(--accent-cyan);
+}
+
+.tutorial-btn:active {
+    transform: translate(1px, 1px);
+}
+
+.tutorial-btn-primary {
+    background: var(--accent-cyan);
+    color: #05050c;
+    margin-left: auto;
+    text-shadow: none;
+    box-shadow: 3px 3px 0 #000, 0 0 14px #00e5ff88;
+}
+
+.tutorial-btn-primary:hover {
+    background: #4df2ff;
+    box-shadow: 3px 3px 0 #000, 0 0 24px var(--accent-cyan);
+}
+
+.tutorial-btn-secondary {
+    border-color: var(--text-dim);
+    color: var(--text-dim);
+}
+
+.tutorial-btn-secondary:hover {
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+    background: #00e5ff11;
+}
+
+.tutorial-btn-ghost {
+    border-color: transparent;
+    color: var(--text-dim);
+    font-size: 8px;
+    padding: 8px 10px;
+}
+
+.tutorial-btn-ghost:hover {
+    background: transparent;
+    color: var(--accent-red);
+    box-shadow: none;
+}
+
+/* ============================================================
    VERSION BANNER (menu)
    ============================================================ */
 

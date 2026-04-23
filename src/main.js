@@ -3,6 +3,7 @@ import {startMenuMusic, stopMenuMusic} from './systems/MenuMusic.js';
 import {SplashScreen} from './screens/SplashScreen.js';
 import {MenuScreen} from './screens/MenuScreen.js';
 import {ChangelogScreen} from './screens/ChangelogScreen.js';
+import {TutorialScreen} from './screens/TutorialScreen.js';
 import {ScreenManager} from './screens/ScreenManager.js';
 
 const game = new Game ();
@@ -10,6 +11,19 @@ const manager = new ScreenManager ();
 
 const changelog = new ChangelogScreen ({
   onClose: () => changelog.unmount (),
+  audio: game.audio,
+});
+
+const tutorial = new TutorialScreen ({
+  onFinish: () => tutorial.unmount (),
+  onSkip: () => {
+    tutorial.unmount ();
+    game.goToMenu ();
+    setTimeout (() => {
+      startMenuMusic ();
+      manager.show (menu);
+    }, 300);
+  },
   audio: game.audio,
 });
 
@@ -28,7 +42,14 @@ const menu = new MenuScreen ({
     setTimeout (() => game.start (), 480);
   },
   onTutorial: () => {
-    console.log ('Tutorial pendiente de implementar');
+    game.audio.ensure ();
+    stopMenuMusic ();
+    menu.unmount ();
+
+    setTimeout (() => {
+      game.start ();
+      tutorial.mount ();
+    }, 480);
   },
   onChangelog: () => changelog.mount (),
 });
