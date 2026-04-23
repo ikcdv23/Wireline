@@ -1,39 +1,39 @@
 // del jugador y el bucle de rondas (idle → rolling → placing → scoring → shop).
 
-import { CONFIG } from './config/constants.js';
-import { Board } from './entities/Board.js';
-import { DiceManager } from './entities/DiceManager.js';
-import { ComponentManager } from './entities/ComponentManager.js';
-import { ScoringEngine } from './systems/ScoringEngine.js';
-import { Renderer } from './systems/Renderer.js';
-import { InputHandler } from './systems/InputHandler.js';
-import { AudioEngine } from './systems/AudioEngine.js';
-import { JuiceEngine } from './systems/JuiceEngine.js';
-import { HUD } from './screens/ui/HUD.js';
-import { Modal } from './screens/ui/Modal.js';
-import { Shop } from './screens/ui/Shop.js';
-import { GameOverScreen } from './screens/GameOverScreen.js';
-import { PauseScreen } from './screens/PauseScreen.js';
-import { startMenuMusic } from './systems/MenuMusic.js';
+import {CONFIG} from './config/constants.js';
+import {Board} from './entities/Board.js';
+import {DiceManager} from './entities/DiceManager.js';
+import {ComponentManager} from './entities/ComponentManager.js';
+import {ScoringEngine} from './systems/ScoringEngine.js';
+import {Renderer} from './systems/Renderer.js';
+import {InputHandler} from './systems/InputHandler.js';
+import {AudioEngine} from './systems/AudioEngine.js';
+import {JuiceEngine} from './systems/JuiceEngine.js';
+import {HUD} from './screens/ui/HUD.js';
+import {Modal} from './screens/ui/Modal.js';
+import {Shop} from './screens/ui/Shop.js';
+import {GameOverScreen} from './screens/GameOverScreen.js';
+import {PauseScreen} from './screens/PauseScreen.js';
 
 const ZONE_PATTERNS = ['prototipo', 'produccion', 'sobrecarga', 'singularidad'];
 
 export class Game {
-  constructor() {
-    this.container = document.getElementById('game-container');
-    this.canvas = document.getElementById('board-canvas');
-    this.diceTray = document.getElementById('dice-tray');
+  constructor ({onReturnToMenu} = {}) {
+    this.onReturnToMenu = onReturnToMenu;
+    this.container = document.getElementById ('game-container');
+    this.canvas = document.getElementById ('board-canvas');
+    this.diceTray = document.getElementById ('dice-tray');
 
     // Sistemas
-    this.board = new Board(ZONE_PATTERNS[0]);
-    this.diceManager = new DiceManager();
-    this.renderer = new Renderer(this.canvas);
-    this.scoring = new ScoringEngine();
-    this.hud = new HUD();
-    this.componentManager = new ComponentManager();
-    this.shop = new Shop(this.componentManager);
-    this.audio = new AudioEngine();
-    this.juice = new JuiceEngine(this.container, this.canvas);
+    this.board = new Board (ZONE_PATTERNS[0]);
+    this.diceManager = new DiceManager ();
+    this.renderer = new Renderer (this.canvas);
+    this.scoring = new ScoringEngine ();
+    this.hud = new HUD ();
+    this.componentManager = new ComponentManager ();
+    this.shop = new Shop (this.componentManager);
+    this.audio = new AudioEngine ();
+    this.juice = new JuiceEngine (this.container, this.canvas);
 
     this.renderer.juice = this.juice;
     this.renderer.audio = this.audio;
@@ -42,6 +42,7 @@ export class Game {
     this.state = {
       lives: CONFIG.PLAYER.START_LIVES,
       money: CONFIG.PLAYER.START_MONEY,
+      fusionPower: CONFIG.PLAYER.START_FUSIONPOWER,
       round: 1,
       zone: 0,
       zoneRound: 1,
@@ -53,68 +54,72 @@ export class Game {
     this.roundScore = 0;
 
     // Input
-    this.input = new InputHandler(
+    this.input = new InputHandler (
       this.canvas,
       this.board,
       this.diceManager,
-      (die, node) => this.onDiePlaced(die, node),
-      (die, node) => this.onDieRemoved(die, node),
+      (die, node) => this.onDiePlaced (die, node),
+      (die, node) => this.onDieRemoved (die, node)
     );
 
-    // Pantallas modales (game over / victoria / pausa)
-    this.gameOverScreen = new GameOverScreen({
-      onBackToMenu: () => this.goToMenu(),
+    // Pantallas modales (game over / victoria / pausa / menu)
+    this.gameOverScreen = new GameOverScreen ({
+      onBackToMenu: () => this.goToMenu (),
       audio: this.audio,
     });
-    this.pauseScreen = new PauseScreen({
-      onResume: () => this.resume(),
-      onQuit: () => this.quitToMenu(),
+    this.pauseScreen = new PauseScreen ({
+      onResume: () => this.resume (),
+      onQuit: () => this.quitToMenu (),
       audio: this.audio,
     });
 
     // Botones
-    this.hud.els.btnRoll.addEventListener('click', () => this.rollDice());
-    this.hud.els.btnConfirm.addEventListener('click', () => this.activateCircuit());
-    document.getElementById('btn-pause').addEventListener('click', () => this.pause());
+    this.hud.els.btnRoll.addEventListener ('click', () => this.rollDice ());
+    this.hud.els.btnConfirm.addEventListener ('click', () =>
+      this.activateCircuit ()
+    );
+    document
+      .getElementById ('btn-pause')
+      .addEventListener ('click', () => this.pause ());
 
     this.paused = false;
-    this.renderLoop = this.renderLoop.bind(this);
+    this.renderLoop = this.renderLoop.bind (this);
 
     // ESC para pausar/continuar
-    document.addEventListener('keydown', (e) => {
+    document.addEventListener ('keydown', e => {
       if (e.key === 'Escape') {
-        if (this.paused) this.resume();
-        else this.pause();
+        if (this.paused) this.resume ();
+        else this.pause ();
       }
     });
   }
 
-  start() {
-    this.container.classList.remove('hidden');
-    this.renderer.resize();
+  start () {
+    this.container.classList.remove ('hidden');
+    this.renderer.resize ();
 
-    this.state.target = this.scoring.getTarget(this.state.round);
+    this.state.target = this.scoring.getTarget (this.state.round);
     this.state.phase = 'idle';
     this.roundScore = 0;
     this.paused = false;
-    this.hud.update(this.state);
-    this.hud.setScore(0);
-    this.hud.enableRoll(true);
-    this.hud.enableConfirm(false);
-    requestAnimationFrame(this.renderLoop);
+    this.hud.update (this.state);
+    this.hud.setScore (0);
+    this.hud.enableRoll (true);
+    this.hud.enableConfirm (false);
+    requestAnimationFrame (this.renderLoop);
   }
 
   // --- Pausa ---
 
-  pause() {
+  pause () {
     if (this.state.phase === 'gameover' || this.state.phase === 'shop') return;
     if (this.paused) return;
 
     this.paused = true;
-    this.input.disable();
+    this.input.disable ();
 
     const zone = CONFIG.ZONES[this.state.zone] || CONFIG.ZONES[0];
-    this.pauseScreen.mount({
+    this.pauseScreen.mount ({
       zone: zone.name,
       round: this.state.round,
       lives: this.state.lives,
@@ -122,34 +127,33 @@ export class Game {
     });
   }
 
-  resume() {
+  resume () {
     if (!this.paused) return;
     this.paused = false;
 
-    this.pauseScreen.unmount(() => {
+    this.pauseScreen.unmount (() => {
       if (this.state.phase === 'placing') {
-        this.input.enable();
+        this.input.enable ();
       }
     });
   }
 
-  quitToMenu() {
+  quitToMenu () {
     this.paused = false;
-    this.pauseScreen.unmount(() => this.goToMenu());
+    this.pauseScreen.unmount (() => this.goToMenu ());
   }
 
-  goToMenu() {
-    // Cerrar la pantalla de game over si estaba abierta
-    this.gameOverScreen.unmount();
+  goToMenu () {
+    this.gameOverScreen.unmount ();
 
-    // Resetear estado
-    this.board = new Board(ZONE_PATTERNS[0]);
-    this.diceManager.fullReset();
+    this.board = new Board (ZONE_PATTERNS[0]);
+    this.diceManager.fullReset ();
     this.input.board = this.board;
-    this.input.disable();
+    this.input.disable ();
     this.state = {
       lives: CONFIG.PLAYER.START_LIVES,
       money: CONFIG.PLAYER.START_MONEY,
+      fusionPower: CONFIG.PLAYER.START_FUSIONPOWER,
       round: 1,
       zone: 0,
       zoneRound: 1,
@@ -159,82 +163,84 @@ export class Game {
     };
     this.roundScore = 0;
     this.diceTray.innerHTML = '';
-    this.hud.setScore(0);
+    this.hud.setScore (0);
 
-    setTimeout(() => {
-      const menu = document.getElementById('mainmenu-overlay');
-      menu.classList.remove('hidden');
-      menu.offsetHeight;
-      menu.classList.add('visible');
-      startMenuMusic();
-    }, 300);
+    setTimeout (() => this.onReturnToMenu (), 300);
   }
 
-  renderLoop() {
+  renderLoop () {
     if (this.state.phase !== 'scoring') {
-      this.renderer.drawBoard(this.board);
+      this.renderer.drawBoard (this.board);
     }
-    requestAnimationFrame(this.renderLoop);
+    requestAnimationFrame (this.renderLoop);
   }
 
   // --- Tirar dados ---
 
-  rollDice() {
+  rollDice () {
     if (this.state.phase !== 'idle') return;
 
-    this.audio.init();
+    this.audio.init ();
     this.state.phase = 'rolling';
-    this.board.clearAllDice();
+    this.board.clearAllDice ();
 
-    this.diceManager.roll();
-    this.diceManager.renderTray(this.diceTray);
-    this.audio.playRoll();
-    this.juice.shake(3, 200);
+    this.diceManager.roll ();
+    this.diceManager.renderTray (this.diceTray);
+    this.audio.playRoll ();
+    this.juice.shake (3, 200);
 
     // Dados aparecen con bounce escalonado + particulas de impacto
-    const dieEls = this.diceTray.querySelectorAll('.die');
-    dieEls.forEach((el, i) => {
+    const dieEls = this.diceTray.querySelectorAll ('.die');
+    dieEls.forEach ((el, i) => {
       el.style.opacity = '0';
       el.style.transform = 'translateY(-30px) scale(0.3)';
-      setTimeout(() => {
+      setTimeout (() => {
         el.style.transition = 'all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)';
         el.style.opacity = '1';
         el.style.transform = 'translateY(0) scale(1)';
-        const rect = el.getBoundingClientRect();
-        const cx = rect.left + rect.width / 2 - this.canvas.getBoundingClientRect().left;
-        const cy = rect.top + rect.height / 2 - this.canvas.getBoundingClientRect().top;
-        this.juice.spawnDiceLand(cx, cy + 240, el.style.color || CONFIG.COLORS.ACCENT_CYAN);
-        this.juice.shake(1, 50);
+        const rect = el.getBoundingClientRect ();
+        const cx =
+          rect.left +
+          rect.width / 2 -
+          this.canvas.getBoundingClientRect ().left;
+        const cy =
+          rect.top + rect.height / 2 - this.canvas.getBoundingClientRect ().top;
+        this.juice.spawnDiceLand (
+          cx,
+          cy + 240,
+          el.style.color || CONFIG.COLORS.ACCENT_CYAN
+        );
+        this.juice.shake (1, 50);
       }, i * 100 + 50);
     });
 
-    setTimeout(() => {
+    setTimeout (() => {
       this.state.phase = 'placing';
-      this.input.enable();
-      this.hud.enableRoll(false);
-      this.hud.enableConfirm(true);
-      this.hud.setConfirmText('ACTIVAR CIRCUITO');
+      this.input.enable ();
+      this.hud.enableRoll (false);
+      this.hud.enableConfirm (true);
+      this.hud.setConfirmText ('ACTIVAR CIRCUITO');
       this.renderer.showPreview = true;
-      this.updateRoutePreview();
+      this.updateRoutePreview ();
     }, dieEls.length * 100 + 150);
   }
 
-  rerollRemaining() {
-    this.board.clearAllDice();
+  rerollRemaining () {
+    this.board.clearAllDice ();
 
-    const remaining = this.diceManager.getUnplacedDice();
+    const remaining = this.diceManager.getUnplacedDice ();
     if (remaining.length === 0) return;
 
-    this.diceManager.reroll(remaining.map((d) => d.id));
-    this.diceManager.renderTray(this.diceTray);
-    this.audio.playReroll();
-    this.juice.shake(2, 150);
+    this.diceManager.reroll (remaining.map (d => d.id));
+    this.diceManager.renderTray (this.diceTray);
+    this.audio.playReroll ();
+    this.juice.shake (2, 150);
 
-    const dieEls = this.diceTray.querySelectorAll('.die');
-    dieEls.forEach((el, i) => {
+    const dieEls = this.diceTray.querySelectorAll ('.die');
+    dieEls.forEach ((el, i) => {
       el.style.opacity = '0';
       el.style.transform = 'translateY(-20px) scale(0.5)';
-      setTimeout(() => {
+      setTimeout (() => {
         el.style.transition = 'all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)';
         el.style.opacity = '1';
         el.style.transform = 'translateY(0) scale(1)';
@@ -242,213 +248,233 @@ export class Game {
     });
 
     this.state.phase = 'placing';
-    this.input.enable();
-    this.hud.enableRoll(false);
-    this.hud.enableConfirm(true);
-    this.hud.setConfirmText('ACTIVAR CIRCUITO');
+    this.input.enable ();
+    this.hud.enableRoll (false);
+    this.hud.enableConfirm (true);
+    this.hud.setConfirmText ('ACTIVAR CIRCUITO');
     this.renderer.showPreview = true;
-    this.updateRoutePreview();
+    this.updateRoutePreview ();
   }
 
-  updateRoutePreview() {
-    const result = this.scoring.previewBestRoute(this.board);
+  updateRoutePreview () {
+    const result = this.scoring.previewBestRoute (this.board);
     this.renderer.previewResult = result;
   }
 
   // --- Colocar / quitar dados ---
 
-  onDiePlaced(die, node) {
-    this.diceManager.renderTray(this.diceTray);
-    this.audio.playPlace();
-    this.juice.spawnNodeBurst(node.x, node.y, die.color || CONFIG.COLORS.ACCENT_CYAN, 8);
-    this.juice.shake(2, 60);
-    this.juice.freezeFrame(40);
-    this.updateRoutePreview();
+  onDiePlaced (die, node) {
+    this.diceManager.renderTray (this.diceTray);
+    this.audio.playPlace ();
+    this.juice.spawnNodeBurst (
+      node.x,
+      node.y,
+      die.color || CONFIG.COLORS.ACCENT_CYAN,
+      8
+    );
+    this.juice.shake (2, 60);
+    this.juice.freezeFrame (40);
+    this.updateRoutePreview ();
   }
 
-  onDieRemoved(die, node) {
-    this.diceManager.renderTray(this.diceTray);
-    this.audio.playRemove();
-    this.updateRoutePreview();
+  onDieRemoved (die, node) {
+    this.diceManager.renderTray (this.diceTray);
+    this.audio.playRemove ();
+    this.updateRoutePreview ();
   }
 
   // --- Activar circuito ---
 
-  activateCircuit() {
+  activateCircuit () {
     if (this.state.phase !== 'placing') return;
-    if (!this.board.hasAnyDicePlaced()) return;
+    if (!this.board.hasAnyDicePlaced ()) return;
 
     this.state.phase = 'scoring';
-    this.input.disable();
-    this.hud.enableConfirm(false);
+    this.input.disable ();
+    this.hud.enableConfirm (false);
     this.renderer.showPreview = false;
     this.renderer.previewResult = null;
 
     // Freeze frame al activar — momento de anticipacion
-    this.juice.freezeFrame(100);
-    this.juice.flash(CONFIG.COLORS.ACCENT_CYAN, 80, 0.08);
+    this.juice.freezeFrame (100);
+    this.juice.flash (CONFIG.COLORS.ACCENT_CYAN, 80, 0.08);
 
-    const result = this.scoring.scoreBestRoute(this.board);
+    const result = this.scoring.scoreBestRoute (this.board);
 
     if (result.route.length === 0) {
-      this.resolveActivation(0);
+      this.resolveActivation (0);
       return;
     }
 
     // Animar corriente con scoring en vivo — HUD actualizado en tiempo real
     const baseRoundScore = this.roundScore;
-    this.renderer.animateRoute(
+    this.renderer.animateRoute (
       this.board,
       result.route,
       result,
       () => {
-        const output = this.board.getOutputNode();
+        const output = this.board.getOutputNode ();
 
         // Mult al final
         if (result.mult > CONFIG.SCORING.BASE_MULT) {
-          this.audio.playMultApply(result.mult);
-          this.juice.doubleFlash(CONFIG.COLORS.ACCENT_YELLOW, 200);
-          this.juice.shake(6, 200);
-          this.juice.freezeFrame(60);
+          this.audio.playMultApply (result.mult);
+          this.juice.doubleFlash (CONFIG.COLORS.ACCENT_YELLOW, 200);
+          this.juice.shake (6, 200);
+          this.juice.freezeFrame (60);
         }
 
         // Breakdown con animacion y sonido por fila
-        this.showScoreBreakdown(result);
-        Modal.showBreakdown(this.audio);
+        this.showScoreBreakdown (result);
+        Modal.showBreakdown (this.audio);
 
         // Conteo en HUD
         const prevScore = this.roundScore;
         const newScore = this.roundScore + result.total;
 
-        this.hud.animateScoreCount(prevScore, newScore, 600, (val) => {
-          this.audio.playScoreTick(val - prevScore, result.total);
+        this.hud.animateScoreCount (prevScore, newScore, 600, val => {
+          this.audio.playScoreTick (val - prevScore, result.total);
         });
 
-        setTimeout(() => {
-          Modal.hideBreakdown();
-          this.resolveActivation(result.total);
+        setTimeout (() => {
+          Modal.hideBreakdown ();
+          this.resolveActivation (result.total);
         }, 1800);
       },
-      (liveScore) => {
+      liveScore => {
         // Callback del renderer: score en tiempo real durante la corriente
         const totalLive = baseRoundScore + liveScore;
-        this.hud.setLiveScore(totalLive);
+        this.hud.setLiveScore (totalLive);
 
         // Particulas de calor si sobrepasa el target
         if (totalLive > this.state.target * 1.5) {
-          this.juice.spawnParticles(400, 30, 2, CONFIG.COLORS.ACCENT_RED, {
-            speed: 20 + Math.random() * 40,
-            life: 300 + Math.random() * 200,
-            size: 2 + Math.random() * 3,
+          this.juice.spawnParticles (400, 30, 2, CONFIG.COLORS.ACCENT_RED, {
+            speed: 20 + Math.random () * 40,
+            life: 300 + Math.random () * 200,
+            size: 2 + Math.random () * 3,
             angle: Math.PI / 2,
             spread: 1.5,
           });
         }
         if (totalLive > this.state.target * 2) {
           const colors = ['#ff3a3a', '#ff8800', '#ffd700', '#ffffff'];
-          const c = colors[Math.floor(Math.random() * colors.length)];
-          this.juice.spawnParticles(400, 30, 3, c, {
-            speed: 30 + Math.random() * 60,
-            life: 400 + Math.random() * 300,
-            size: 3 + Math.random() * 4,
+          const c = colors[Math.floor (Math.random () * colors.length)];
+          this.juice.spawnParticles (400, 30, 3, c, {
+            speed: 30 + Math.random () * 60,
+            life: 400 + Math.random () * 300,
+            size: 3 + Math.random () * 4,
             angle: Math.PI / 2,
             spread: 2,
           });
         }
-      },
+      }
     );
   }
 
   // --- Resolver activacion ---
 
-  resolveActivation(score) {
+  resolveActivation (score) {
     this.roundScore += score;
 
     const reachedTarget = this.roundScore >= this.state.target;
-    const output = this.board.getOutputNode();
-    const remaining = this.diceManager.getUnplacedDice();
+    const output = this.board.getOutputNode ();
+    const remaining = this.diceManager.getUnplacedDice ();
 
     if (reachedTarget) {
       // === Ronda ganada ===
-      this.audio.playSuccess();
-      this.hud.flashResult(true);
+      this.audio.playSuccess ();
+      this.hud.flashResult (true);
       this.state.totalScore += this.roundScore;
 
-      this.juice.spawnVictoryExplosion(output.x, output.y);
-      this.juice.shake(10, 400);
-      this.juice.doubleFlash(CONFIG.COLORS.ACCENT_GREEN, 300);
-      this.juice.freezeFrame(120);
+      this.juice.spawnVictoryExplosion (output.x, output.y);
+      this.juice.shake (10, 400);
+      this.juice.doubleFlash (CONFIG.COLORS.ACCENT_GREEN, 300);
+      this.juice.freezeFrame (120);
 
       if (remaining.length > 0) {
-        this.animateDiceToMoney(remaining);
+        this.animateDiceToMoney (remaining);
       }
 
-      this.runEndOfRound();
-      setTimeout(() => this.advanceRound(), 1500 + remaining.length * 200);
+      this.runEndOfRound ();
+      setTimeout (() => this.advanceRound (), 1500 + remaining.length * 200);
     } else if (remaining.length > 0) {
       // === Quedan dados — siguiente tiro ===
-      this.juice.shake(4, 120);
-      this.juice.flash(CONFIG.COLORS.ACCENT_YELLOW, 100, 0.08);
+      this.juice.shake (4, 120);
+      this.juice.flash (CONFIG.COLORS.ACCENT_YELLOW, 100, 0.08);
 
-      this.renderer.addFloatingText(
-        400, 260,
+      this.renderer.addFloatingText (
+        400,
+        260,
         `${this.roundScore}/${this.state.target}`,
-        CONFIG.COLORS.ACCENT_YELLOW,
+        CONFIG.COLORS.ACCENT_YELLOW
       );
-      this.renderer.addFloatingText(
-        400, 290,
+      this.renderer.addFloatingText (
+        400,
+        290,
         `${remaining.length} DADOS`,
-        CONFIG.COLORS.TEXT_DIM,
+        CONFIG.COLORS.TEXT_DIM
       );
 
-      setTimeout(() => this.rerollRemaining(), 1200);
+      setTimeout (() => this.rerollRemaining (), 1200);
     } else {
       // === Sin dados — pierdes vida ===
-      this.audio.playLoseLife();
-      this.hud.flashResult(false);
+      this.audio.playLoseLife ();
+      this.hud.flashResult (false);
 
-      this.juice.spawnScoreExplosion(output.x, output.y, false);
-      this.juice.shake(12, 500);
-      this.juice.doubleFlash(CONFIG.COLORS.ACCENT_RED, 300);
-      this.juice.freezeFrame(150);
+      this.juice.spawnScoreExplosion (output.x, output.y, false);
+      this.juice.shake (12, 500);
+      this.juice.doubleFlash (CONFIG.COLORS.ACCENT_RED, 300);
+      this.juice.freezeFrame (150);
 
-      this.renderer.addFloatingText(
-        400, 260,
+      this.renderer.addFloatingText (
+        400,
+        260,
         `${this.roundScore}/${this.state.target}`,
-        CONFIG.COLORS.ACCENT_RED,
+        CONFIG.COLORS.ACCENT_RED
       );
-      this.renderer.addFloatingText(400, 290, 'SIN DADOS', CONFIG.COLORS.ACCENT_RED);
+      this.renderer.addFloatingText (
+        400,
+        290,
+        'SIN DADOS',
+        CONFIG.COLORS.ACCENT_RED
+      );
 
       this.state.lives--;
 
       // Consolacion: $1 por cada nodo con dado que la corriente toco
-      const nodesWithDice = this.board.nodes.filter((n) => n.dieValue !== null).length;
+      const nodesWithDice = this.board.nodes.filter (n => n.dieValue !== null)
+        .length;
       if (nodesWithDice > 0) {
         this.state.money += nodesWithDice;
-        this.renderer.addFloatingText(
-          400, 320,
+        this.renderer.addFloatingText (
+          400,
+          320,
           `+$${nodesWithDice} (nodos)`,
-          CONFIG.COLORS.ACCENT_YELLOW,
+          CONFIG.COLORS.ACCENT_YELLOW
         );
       }
 
-      this.hud.update(this.state);
+      this.hud.update (this.state);
 
-      this.runEndOfRound();
+      this.runEndOfRound ();
 
       if (this.state.lives <= 0) {
-        setTimeout(() => this.gameOver(), 1200);
+        setTimeout (() => this.gameOver (), 1200);
       } else {
-        this.renderer.addFloatingText(400, 320, 'REINTENTAR RONDA', CONFIG.COLORS.TEXT_DIM);
-        setTimeout(() => this.retryRound(), 1200);
+        this.renderer.addFloatingText (
+          400,
+          320,
+          'REINTENTAR RONDA',
+          CONFIG.COLORS.TEXT_DIM
+        );
+        setTimeout (() => this.retryRound (), 1200);
       }
     }
   }
 
-  runEndOfRound() {
+  runEndOfRound () {
     for (const node of this.board.nodes) {
       if (node.component && node.component.onRoundEnd) {
-        node.component.onRoundEnd(node);
+        node.component.onRoundEnd (node);
       }
       if (
         node.component &&
@@ -462,7 +488,7 @@ export class Game {
 
   // --- Avanzar ronda ---
 
-  advanceRound() {
+  advanceRound () {
     this.state.zoneRound++;
 
     const zone = CONFIG.ZONES[this.state.zone];
@@ -471,40 +497,40 @@ export class Game {
       this.state.zoneRound = 1;
 
       if (this.state.zone >= CONFIG.ZONES.length) {
-        this.victory();
+        this.victory ();
         return;
       }
 
-      this.audio.playZoneTransition();
-      this.juice.doubleFlash(CONFIG.ZONES[this.state.zone].color, 400);
-      this.juice.shake(8, 400);
-      this.juice.spawnConfetti(25);
+      this.audio.playZoneTransition ();
+      this.juice.doubleFlash (CONFIG.ZONES[this.state.zone].color, 400);
+      this.juice.shake (8, 400);
+      this.juice.spawnConfetti (25);
 
       const savedComponents = [];
       for (const node of this.board.nodes) {
-        if (node.component) savedComponents.push(node.component);
+        if (node.component) savedComponents.push (node.component);
       }
 
       const newPattern = ZONE_PATTERNS[this.state.zone];
-      this.board = new Board(newPattern);
+      this.board = new Board (newPattern);
       this.input.board = this.board;
 
-      const freeNodes = this.board.getNormalNodes().filter((n) => !n.component);
-      savedComponents.forEach((comp, i) => {
+      const freeNodes = this.board.getNormalNodes ().filter (n => !n.component);
+      savedComponents.forEach ((comp, i) => {
         if (freeNodes[i]) freeNodes[i].component = comp;
       });
     }
 
     this.state.round++;
-    this.state.target = this.scoring.getTarget(this.state.round);
+    this.state.target = this.scoring.getTarget (this.state.round);
 
-    const hadInterest = this.applyInterest();
+    const hadInterest = this.applyInterest ();
     const shopDelay = hadInterest ? 900 : 0;
 
-    setTimeout(() => {
+    setTimeout (() => {
       this.state.phase = 'shop';
-      this.hud.update(this.state);
-      this.shop.open(
+      this.hud.update (this.state);
+      this.shop.open (
         this.state,
         this.board,
         this.renderer,
@@ -512,57 +538,61 @@ export class Game {
         this.juice,
         this.diceManager,
         () => {
-          this.startNewRound();
-        },
+          this.startNewRound ();
+        }
       );
     }, shopDelay);
   }
 
-  applyInterest() {
-    const interest = Math.min(
-      Math.floor(this.state.money / CONFIG.PLAYER.INTEREST_PER),
-      CONFIG.PLAYER.INTEREST_MAX,
+  applyInterest () {
+    const interest = Math.min (
+      Math.floor (this.state.money / CONFIG.PLAYER.INTEREST_PER),
+      CONFIG.PLAYER.INTEREST_MAX
     );
     if (interest <= 0) return false;
 
     this.state.money += interest;
-    this.hud.update(this.state);
+    this.hud.update (this.state);
 
-    this.renderer.addFloatingText(
-      640, 80,
+    this.renderer.addFloatingText (
+      640,
+      80,
       `INTERES +$${interest}`,
-      CONFIG.COLORS.ACCENT_GREEN,
+      CONFIG.COLORS.ACCENT_GREEN
     );
-    this.audio.playScoreTick(0, 1);
+    this.audio.playScoreTick (0, 1);
 
-    const moneyDisplay = document.getElementById('money-display');
-    const moneyIcon = document.getElementById('hud-money-icon');
-    moneyDisplay.classList.add('coin-pop');
-    moneyIcon.classList.add('coin-pop');
-    setTimeout(() => {
-      moneyDisplay.classList.remove('coin-pop');
-      moneyIcon.classList.remove('coin-pop');
+    const moneyDisplay = document.getElementById ('money-display');
+    const moneyIcon = document.getElementById ('hud-money-icon');
+    moneyDisplay.classList.add ('coin-pop');
+    moneyIcon.classList.add ('coin-pop');
+    setTimeout (() => {
+      moneyDisplay.classList.remove ('coin-pop');
+      moneyIcon.classList.remove ('coin-pop');
     }, 400);
 
     return true;
   }
 
-  animateDiceToMoney(remaining) {
-    remaining.forEach((die, i) => {
-      setTimeout(() => this.flyDieToMoney(die, i, remaining.length), 250 + i * 170);
+  animateDiceToMoney (remaining) {
+    remaining.forEach ((die, i) => {
+      setTimeout (
+        () => this.flyDieToMoney (die, i, remaining.length),
+        250 + i * 170
+      );
     });
   }
 
-  flyDieToMoney(die, index, total) {
-    const dieEl = this.diceTray.querySelector(`[data-die-id="${die.id}"]`);
+  flyDieToMoney (die, index, total) {
+    const dieEl = this.diceTray.querySelector (`[data-die-id="${die.id}"]`);
     if (!dieEl) {
       this.state.money += die.value;
-      this.hud.update(this.state);
+      this.hud.update (this.state);
       return;
     }
 
-    const containerRect = this.container.getBoundingClientRect();
-    const dieRect = dieEl.getBoundingClientRect();
+    const containerRect = this.container.getBoundingClientRect ();
+    const dieRect = dieEl.getBoundingClientRect ();
 
     const startX = dieRect.left - containerRect.left;
     const startY = dieRect.top - containerRect.top;
@@ -572,11 +602,11 @@ export class Game {
     const centerX = (this.container.clientWidth - dieWidth) / 2;
     const centerY = (this.container.clientHeight - dieHeight) / 2;
 
-    const clone = dieEl.cloneNode(true);
-    clone.classList.add('flying-die');
+    const clone = dieEl.cloneNode (true);
+    clone.classList.add ('flying-die');
     clone.style.left = startX + 'px';
     clone.style.top = startY + 'px';
-    this.container.appendChild(clone);
+    this.container.appendChild (clone);
     dieEl.style.opacity = '0';
 
     clone.offsetHeight;
@@ -588,75 +618,80 @@ export class Game {
     clone.style.top = centerY + 'px';
     clone.style.transform = 'scale(1.5) rotate(540deg)';
 
-    setTimeout(() => {
+    setTimeout (() => {
       const color = die.color || CONFIG.COLORS.ACCENT_YELLOW;
       const explosionX = centerX + dieWidth / 2;
       const explosionY = centerY + dieHeight / 2;
 
-      this.juice.spawnNodeBurst(explosionX, explosionY, color, 14);
-      this.juice.spawnNodeBurst(explosionX, explosionY, CONFIG.COLORS.ACCENT_YELLOW, 8);
-      this.juice.shake(3, 120);
-      this.audio.playScoreTick(index, total);
+      this.juice.spawnNodeBurst (explosionX, explosionY, color, 14);
+      this.juice.spawnNodeBurst (
+        explosionX,
+        explosionY,
+        CONFIG.COLORS.ACCENT_YELLOW,
+        8
+      );
+      this.juice.shake (3, 120);
+      this.audio.playScoreTick (index, total);
 
       clone.style.transition = 'opacity 0.25s, transform 0.25s';
       clone.style.opacity = '0';
       clone.style.transform = 'scale(0.4) rotate(720deg)';
 
       this.state.money += die.value;
-      this.hud.update(this.state);
+      this.hud.update (this.state);
 
-      const moneyDisplay = document.getElementById('money-display');
-      const moneyIcon = document.getElementById('hud-money-icon');
-      moneyDisplay.classList.remove('coin-pop');
-      moneyIcon.classList.remove('coin-pop');
+      const moneyDisplay = document.getElementById ('money-display');
+      const moneyIcon = document.getElementById ('hud-money-icon');
+      moneyDisplay.classList.remove ('coin-pop');
+      moneyIcon.classList.remove ('coin-pop');
       moneyDisplay.offsetHeight;
-      moneyDisplay.classList.add('coin-pop');
-      moneyIcon.classList.add('coin-pop');
-      setTimeout(() => {
-        moneyDisplay.classList.remove('coin-pop');
-        moneyIcon.classList.remove('coin-pop');
+      moneyDisplay.classList.add ('coin-pop');
+      moneyIcon.classList.add ('coin-pop');
+      setTimeout (() => {
+        moneyDisplay.classList.remove ('coin-pop');
+        moneyIcon.classList.remove ('coin-pop');
       }, 400);
 
-      setTimeout(() => clone.remove(), 260);
-      if (dieEl.parentNode) dieEl.remove();
+      setTimeout (() => clone.remove (), 260);
+      if (dieEl.parentNode) dieEl.remove ();
     }, 580);
   }
 
-  retryRound() {
-    this.board.clearAllDice();
-    this.diceManager.reset();
+  retryRound () {
+    this.board.clearAllDice ();
+    this.diceManager.reset ();
     this.diceTray.innerHTML = '';
     this.roundScore = 0;
     this.state.phase = 'idle';
-    this.hud.update(this.state);
-    this.hud.setScore(0);
-    this.hud.enableRoll(true);
-    this.hud.enableConfirm(false);
+    this.hud.update (this.state);
+    this.hud.setScore (0);
+    this.hud.enableRoll (true);
+    this.hud.enableConfirm (false);
   }
 
-  startNewRound() {
-    this.board.clearAllDice();
-    this.diceManager.reset();
+  startNewRound () {
+    this.board.clearAllDice ();
+    this.diceManager.reset ();
     this.diceTray.innerHTML = '';
     this.roundScore = 0;
     this.state.phase = 'idle';
-    this.hud.update(this.state);
-    this.hud.setScore(0);
-    this.hud.enableRoll(true);
-    this.hud.enableConfirm(false);
+    this.hud.update (this.state);
+    this.hud.setScore (0);
+    this.hud.enableRoll (true);
+    this.hud.enableConfirm (false);
   }
 
   // --- Game over / victoria ---
 
-  gameOver() {
+  gameOver () {
     this.state.phase = 'gameover';
-    this.audio.playGameOver();
-    this.juice.spawnGameOverEffect();
-    this.juice.shake(15, 800);
-    this.juice.doubleFlash(CONFIG.COLORS.ACCENT_RED, 500);
+    this.audio.playGameOver ();
+    this.juice.spawnGameOverEffect ();
+    this.juice.shake (15, 800);
+    this.juice.doubleFlash (CONFIG.COLORS.ACCENT_RED, 500);
 
-    setTimeout(() => {
-      this.gameOverScreen.mount({
+    setTimeout (() => {
+      this.gameOverScreen.mount ({
         round: this.state.round,
         score: this.state.totalScore,
       });
@@ -665,12 +700,12 @@ export class Game {
 
   // --- Score breakdown ---
 
-  showScoreBreakdown(result) {
-    const panel = document.getElementById('score-breakdown');
+  showScoreBreakdown (result) {
+    const panel = document.getElementById ('score-breakdown');
     let html = '<div class="breakdown-title">DESGLOSE</div>';
 
     for (const detail of result.details) {
-      const node = this.board.getNode(detail.nodeId);
+      const node = this.board.getNode (detail.nodeId);
       const comp = node ? node.component : null;
       let label = `NODO ${detail.nodeId}`;
       if (comp) {
@@ -707,27 +742,27 @@ export class Game {
     }
 
     panel.innerHTML = html;
-    panel.classList.remove('hidden');
+    panel.classList.remove ('hidden');
   }
 
-  hideScoreBreakdown() {
-    Modal.hideBreakdown();
+  hideScoreBreakdown () {
+    Modal.hideBreakdown ();
   }
 
-  victory() {
+  victory () {
     this.state.phase = 'gameover';
-    this.audio.playSuccess();
-    this.juice.spawnVictoryExplosion(400, 280);
-    this.juice.shake(12, 600);
-    this.juice.doubleFlash(CONFIG.COLORS.ACCENT_YELLOW, 500);
+    this.audio.playSuccess ();
+    this.juice.spawnVictoryExplosion (400, 280);
+    this.juice.shake (12, 600);
+    this.juice.doubleFlash (CONFIG.COLORS.ACCENT_YELLOW, 500);
 
     // Confeti en oleadas
-    setTimeout(() => this.juice.spawnConfetti(50), 300);
-    setTimeout(() => this.juice.spawnConfetti(30), 800);
-    setTimeout(() => this.juice.spawnConfetti(20), 1300);
+    setTimeout (() => this.juice.spawnConfetti (50), 300);
+    setTimeout (() => this.juice.spawnConfetti (30), 800);
+    setTimeout (() => this.juice.spawnConfetti (20), 1300);
 
-    setTimeout(() => {
-      this.gameOverScreen.mount({
+    setTimeout (() => {
+      this.gameOverScreen.mount ({
         round: this.state.round,
         score: this.state.totalScore,
         title: '★ SINGULARIDAD ALCANZADA ★',

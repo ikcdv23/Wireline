@@ -129,42 +129,7 @@ export class ScoringEngine {
     return best;
   }
 
-  _combineAllRoutes(board, allRoutes) {
-    let totalBaseScore = 0;
-    let maxMult = CONFIG.SCORING.BASE_MULT;
-    const countedNodes = new Set();
-    const allDetails = [];
-    let bestResult = null;
 
-    for (const route of allRoutes) {
-      const result = this._evaluateRoute(board, route);
-
-      if (result.mult > maxMult) maxMult = result.mult;
-
-      for (const detail of result.details) {
-        if (!countedNodes.has(detail.nodeId)) {
-          countedNodes.add(detail.nodeId);
-          totalBaseScore += detail.value;
-          allDetails.push(detail);
-        }
-      }
-
-      if (!bestResult || result.total > bestResult.total) {
-        bestResult = result;
-      }
-    }
-
-    const total = Math.round(totalBaseScore * maxMult);
-
-    return {
-      route: bestResult.route,
-      baseScore: totalBaseScore,
-      mult: maxMult,
-      total,
-      details: allDetails,
-      allRoutes: allRoutes.length,
-    };
-  }
 
   _commitRoute(board, route) {
     for (const nodeId of route) {

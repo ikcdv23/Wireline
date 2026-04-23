@@ -1,19 +1,21 @@
 # Handoff para la proxima sesion de Claude
 
-> Documento de transicion entre sesiones. Ultima actualizacion: **2026-04-22**.
+> Documento de transicion entre sesiones. Ultima actualizacion: **2026-04-23**.
 > Escrito por la sesion anterior para que la siguiente entre en contexto rapido.
 
 ## Como esta el proyecto
 
-Wireline va por la **v2.2.0**. El juego funciona y es jugable. **Fase 2 del refactor cerrada en lo esencial** (Splash, Menu, Pausa, GameOver, Changelog migradas a clases con mount/unmount). Shop pendiente (ver abajo).
+Wireline va por la **v2.2.0**. El juego funciona y es jugable. **Fase 2 del refactor cerrada en lo esencial** (Splash, Menu, Pausa, GameOver, Changelog migradas a clases con mount/unmount; ScreenManager activo; Game.js ya no toca DOM del menu). Shop pendiente de migrar a API uniforme.
 
-**Nota importante**: el usuario puede trabajar desde dos PCs. Si hay commits recientes en git que no esperabas, es que venian del otro PC. Sincronizar antes de tocar cualquier cosa.
+**Nota importante**: el usuario trabaja desde dos PCs. Si hay commits recientes en git que no esperabas, es que venian del otro PC. `git pull` siempre antes de tocar cualquier cosa.
 
 ## Colaboracion con el usuario
 
-El usuario aprende mientras refactoriza. **Tutor-style, WHY antes del WHAT** — pero **codigo concreto primero, explicacion bloque a bloque despues**. No soltar teoria por delante. Analogia que el uso: "es como si me dijeras que escriba una tortilla en ingles, se hacer la tortilla pero no se escribir en ingles".
+Tutor-style, **WHY antes del WHAT**, pero **codigo concreto primero, explicacion bloque a bloque despues**. No soltar teoria por delante. Analogia que uso: "es como si me dijeras que escriba una tortilla en ingles, se hacer la tortilla pero no se escribir en ingles".
 
-**Regla acordada en esta sesion**: 10 minutos en papel antes de preguntar. Traer **hipotesis**, no problema crudo. Rol de rubber duck, no oraculo. Ver memoria `feedback_user_autonomy.md`.
+**10 minutos en papel antes de preguntar**. Traer hipotesis, no problema crudo. Rol de rubber duck, no oraculo.
+
+**Cuando el usuario diga "dejame lucharlas"**: no dar soluciones directas. Hacer preguntas socraticas. Pero si se bloquea ("no se he hecho una mierda"), cortar con la mayeutica y darle la solucion con explicacion bloque a bloque.
 
 **Lo que sabe a dia de hoy**:
 - Clases ES6, `constructor`, `this`, metodos, `bind`.
@@ -21,11 +23,9 @@ El usuario aprende mientras refactoriza. **Tutor-style, WHY antes del WHAT** —
 - Destructuring en parametros.
 - `addEventListener` / `removeEventListener` con referencias estables.
 - `requestAnimationFrame` / `cancelAnimationFrame`.
-- Patron de callbacks (`onDone`, `onStart`, `onClose`).
+- Patron de callbacks (`onDone`, `onStart`, `onClose`, `onReturnToMenu`).
 - Screen Manager y mount/unmount.
-- El `||` como condicional (operador de coalescencia).
-- Early return / guard clauses.
-- Que `apply()` en el motor era PURO + MUTADOR y por que eso era un problema.
+- Separacion de responsabilidades (Game no debe tocar DOM del menu).
 - Preview vs score / evaluacion pura vs commit.
 
 **Lo que NO quiere tocar**: CSS. Delega visuales en Claude.
@@ -33,85 +33,182 @@ El usuario aprende mientras refactoriza. **Tutor-style, WHY antes del WHAT** —
 **Tropiezos recurrentes a vigilar**:
 - Confunde "crear pantalla" (`new`) con "montarla" (`mount()`).
 - No abre la consola por defecto. Si peta algo, recordarle F12 → Console.
-- ES Modules + strict mode → variables inexistentes lanzan `ReferenceError` (le paso con `dieFaces` a secas en vez de `node.dieFaces`).
+- ES Modules + strict mode → variables inexistentes lanzan `ReferenceError`.
 - Typos de IDs HTML rompen sin aviso.
+- Cuando copia-pega codigo, a veces le pasan cosas raras (lineas duplicadas, lineas fantasma de otros archivos).
 
-## Que hicimos en la sesion 2026-04-22 (larga, mucha miga)
+**Lo que el usuario me ha pedido mejorar**:
+- Revisar yo el codigo antes de preguntar por estado. Pregunte 3 veces si los bugs estaban arreglados sin mirar el codigo. Proxima vez: mirar primero, preguntar despues.
 
-### 1. Memoria migrada a la ruta correcta
-Las memorias previas vivian en el slug del directorio padre (`Proyectos-DEV`). Esta sesion se abrio desde `wireline/` — slug distinto, memoria vacia. Migradas 8 memorias nuevas especificas a esta ruta (user background, teaching mode, no-coauthor, powershell, hard rules, project state, obsidian, handoff).
+## Que hicimos en la sesion 2026-04-23
 
-### 2. Cierre de Fase 2
-- `GameOverScreen` extraida con estado dinamico (`round`, `score`, `title`, `victory`).
-- `PauseScreen` extraida con callback `afterClose` para reactivar input.
-- `ChangelogScreen` nueva — modal accesible desde el menu con banner pulsante "vX.X.X IS HERE !!!".
+### 1. Dos bugs de refactor atados en corto
 
-Shop pendiente de migrar a API uniforme (`mount`/`unmount` en vez de `open`/`onClose`). Lo hablamos y decidimos aparcarlo.
+- **Eliminado `_combineAllRoutes`** en `ScoringEngine` (codigo muerto desde que quitamos el Divisor).
+- **`Game.goToMenu()` ya no toca DOM del menu**. Antes hacia `getElementById('mainmenu-overlay')` + `classList.add('visible')` + `startMenuMusic()` a mano, violando separacion de responsabilidades.
+  - Ahora `Game` recibe `onReturnToMenu` como callback en el constructor.
+  - `main.js` define ese callback: `() => { manager.show(menu); startMenuMusic(); }`.
+  - `Game` solo sabe resetear estado y llamar al callback.
 
-### 3. Refactor gordo del ScoringEngine
-Problema detectado: el motor corria la misma logica para preview (colocar dado) y para activar, y los componentes con estado mutable (Condensador, Fusible, Critico) sufrian side-effects silenciosos. El preview gastaba usos del Fusible y cargaba el Critico.
+**Detalle feo pendiente (bajo coste)**: en `src/Game.js:23-24` hay una linea duplicada `this.container = document.getElementById('game-container');`. Borrar una.
 
-Refactor aplicado:
-- `previewBestRoute(board)` — puro, sin side effects.
-- `scoreBestRoute(board)` — con commit, muta estado solo en la ruta activada.
-- Split por componente: `effect(node)` (calcula) + `onScore(node)` (muta).
-- `_commitRoute` aislado del resto de evaluacion.
-- Fix adicional: el motor **solo llama a `effect`/`onScore` si hay dado en el nodo** (contrato "el componente activa cuando pones un dado encima").
+### 2. Diseño completo del sistema de FUSION DE DADOS
 
-El usuario siguio la implementacion y acabo encontrando un bug que se me escapo: `onScore` tenia que tener el mismo guard `node.dieValue` en `_commitRoute`. Lo arreglamos juntos.
+El usuario quiere implementar una mecanica nueva: combinar dados para subir de tier. **Todo el diseño esta cerrado**, listo para empezar a implementar en la proxima sesion.
 
-### 4. Componentes
-- **Nuevos**: Inversor ($5, common) e Acumulador Critico ($10, rare — carga 3 activaciones, dispara x3 mult).
-- **Eliminados**: Cortocircuito y Divisor. El `splitter` hardcodeado en ScoringEngine tambien limpiado.
-- **Rebalance**: Sobretension pasa de x2 a x3 mult ($4); Amplificador $8→$12; Fusible $8→$12; Sobretension $1→$4.
-- **Bug fix Condensador**: linea `storedValue = dieValue || 0` reseteaba la memoria a 0 cuando el nodo estaba vacio. Refactorizado a `effect` + `onScore` + `onRoundEnd`.
+---
 
-### 5. UI/UX
-- Juego a pantalla completa (quitados los caps `max-width: 1400px` y `max-height: 900px`).
-- Panel de controles unificado (`#control-panel`) que agrupa dados + botones con borde cian arriba y abajo, levantado 40px del suelo para que los botones queden mas cerca del tablero.
-- HUD e iconos ampliados (+20-30%) para mejor legibilidad.
-- Modal de desglose (#score-breakdown) ampliado con `min-width: 420px`.
-- **Banner "v2.2.0 IS HERE !!!"** en el menu, pulsante, con sheen animado cian. Clicable → abre ChangelogScreen con las novedades.
-- ChangelogScreen scrollable, entrada `is-latest` destacada con borde cian y badge LATEST amarillo.
+## SISTEMA DE FUSION — DISEÑO CERRADO
 
-### 6. Version bump a 2.2.0
-3 sitios sincronizados: `package.json`, `index.html` (splash-sub + menu-footer), `README.md` (header).
+### Nueva moneda: tickets
+
+- Empiezas con 0 tickets.
+- Cada fusion consume 1 ticket.
+- Se obtienen por: cofres (azar, no diseñado aun), score bonus, o compra en tienda ($5).
+
+### Fusion
+
+- `2 × d4 → 1 × d6`
+- `2 × d6 → 1 × d8`
+- `2 × d8 → 1 × d10`
+- `2 × d10 → 1 × d12`
+- Solo dados del mismo tipo.
+- Consume 1 ticket.
+- **Irreversible**. No hay deshacer.
+
+### Tienda
+
+- **Solo vende d4 ($4) y d6 ($8)**. Son materia prima.
+- **No vende d8, d10, d12** — solo se obtienen por fusion.
+- **Tickets a $5**.
+- Cantidad ilimitada de compras.
+
+### Venta de dados
+
+- Solo se pueden vender d4 y d6 (los de materia prima).
+- Precio de venta: **mitad del precio de compra** — d4 se vende por $2, d6 por $4.
+- Los d8, d10, d12 no se venden ni se descartan. Una vez los tienes, son permanentes.
+
+### Inventario (nueva pantalla, Fase B)
+
+- Dos secciones: **Mis dados** y **Modificadores**.
+- La seccion de modificadores sera **placeholder "Proximamente"** en esta iteracion.
+- Muestra "dados conocidos" (slots vacios de d8/d10/d12 que el jugador no tiene aun, para que sepa que existen y hasta donde puede llegar).
+- Al clicar un dado de materia prima (d4/d6):
+  - Boton **Vender** ($2 o $4).
+  - Boton **Fusionar** → entra en modo seleccion, resalta dados compatibles del mismo tipo, oscurece el resto.
+- Al clicar un dado superior (d8+):
+  - No hay accion posible, solo visualizacion.
+- **UX critica**: el boton de accion destructiva (fusionar) debe estar separado visualmente del principal. El usuario menciono su trauma con el "descartar vs jugar mano" de Balatro.
+
+### Acceso al inventario
+
+- Entre rondas (misma ventana temporal que la Shop).
+- Dos botones lado a lado: uno para Shop, otro para Inventario.
+
+### Animacion/visual por tier
+
+- Los dados superiores vibran/palpitan con intensidad creciente.
+- d12 = rojo neon, vibra fuerte, da sensacion de "inestable de tanto poder".
+- Escalado proporcional hacia abajo (d10 menos, d8 un poco, d4/d6 estaticos).
+
+### Score bonus — Tabla Fibonacci
+
+Al acabar una ronda, se calcula el excedente sobre el target. Segun cuanto lo superes:
+
+**Monedas extra**:
+
+| Excedente | Monedas acum. |
+|---|---|
+| ≥ 5% | +1 |
+| ≥ 8% | +2 |
+| ≥ 13% | +3 |
+| ≥ 21% | +4 |
+| ≥ 34% | +5 |
+| ≥ 55% | +6 |
+| ≥ 89% | +7 |
+| ≥ 144% | +8 |
+
+Los deltas entre umbrales son Fibonacci (3, 5, 8, 13, 21, 34, 55).
+
+**Tickets**:
+
+- Excedente ≥ 25% → +1 ticket.
+- Excedente ≥ 100% → +2 tickets en total.
+
+Solo 2 umbrales para tickets (vs 8 para monedas) → tickets son raros, conservan peso como recurso.
+
+### Fases de implementacion
+
+**Fase A — Fundamentos** (proxima sesion, prioridad 1):
+1. Añadir `tickets` al state del jugador (`CONFIG.PLAYER.START_TICKETS: 0` en `constants.js`, `state.tickets` en `Game.js`). Tambien en el reset de `goToMenu`.
+2. Mostrar contador de tickets en el HUD (nuevo span junto al `#money-display`, icono, metodo `setTickets` en `HUD.js`). Icono sugerido: `&#127903;` (🎟) o similar — tono distinto al dorado del dinero.
+3. Restringir la Shop a solo d4 y d6 (filtro en `DIE_TYPES` dentro de `Shop.js`).
+4. Añadir "ticket" a la venta en la Shop ($5). Nuevo tipo de item, reutilizar logica de compra existente.
+5. Implementar bonus Fibonacci en `Game` al fin de ronda: calcular excedente `(score - target) / target * 100`, aplicar tabla, sumar monedas y tickets al state, mostrar feedback en el score breakdown.
+
+**Fase B — Inventario y fusion** (sesion siguiente):
+- Crear `InventoryScreen.js` con mount/unmount.
+- Renderizar dados agrupados por tipo con contadores.
+- Renderizar "dados conocidos" (slots placeholder de los no obtenidos).
+- Implementar click → menu de acciones (vender/fusionar).
+- Modo seleccion de fusion (oscurece incompatibles).
+- Boton de acceso al lado del boton de Shop.
+- Placeholder "Modificadores - Proximamente".
+
+**Fase C — Polish visual**:
+- Animaciones diferenciadas por tier (vibracion, glow, color calido creciente).
+- Sonidos de fusion.
+- Feedback visual al superar umbrales del score bonus.
+
+**Fase D — Cofres** (pendiente de diseñar):
+- El usuario menciono que los cofres darian tickets al azar. No se ha diseñado aun. Al retomar: preguntarle por el sistema de cofres antes de implementarlo.
+
+### Preguntas de diseño que pueden surgir
+
+- **¿Cuantos dados empieza teniendo el jugador?** Verificarlo en `DiceManager.fullReset()`. El diseño actual asume que el jugador puede quedarse con muy pocos dados si fusiona mucho. Confirmar que esa experiencia es la deseada.
+- **¿Como se muestra el bonus Fibonacci?** Proponer que aparezca en el score breakdown como lineas extra con los umbrales alcanzados.
+
+---
 
 ## Estado actual de archivos clave
 
 ```
 src/
-├── main.js               Orquestador (menu, splash, changelog, manager)
-├── Game.js               Sigue siendo monolito — Fase 3 lo separara
+├── main.js               Orquestador (splash, menu, changelog, tutorial, manager, Game con onReturnToMenu)
+├── Game.js               Limpio de DOM del menu. Sigue siendo monolito en el resto (Fase 3 lo dividira)
 ├── config/
-│   ├── changelog.js      ✅ Nuevo — historial de versiones
-│   ├── componentDefs.js  ✅ 7 componentes (eliminados split y short)
+│   ├── changelog.js      Historial de versiones
+│   ├── componentDefs.js  7 componentes
 │   ├── constants.js, dieTypes.js, boardPatterns.js
 ├── screens/
 │   ├── SplashScreen.js   ✅
-│   ├── MenuScreen.js     ✅ (ahora con onChangelog)
-│   ├── ChangelogScreen.js ✅ Nueva
+│   ├── MenuScreen.js     ✅ (con onStart, onTutorial, onChangelog)
+│   ├── ChangelogScreen.js ✅
+│   ├── TutorialScreen.js ✅ (placeholder funcional)
 │   ├── GameOverScreen.js ✅
 │   ├── PauseScreen.js    ✅
 │   ├── ScreenManager.js  ✅
-│   └── ui/               HUD, Modal, Shop (widgets DOM)
+│   └── ui/               HUD, Modal, Shop
 ├── entities/, systems/, lib/
-└── systems/ScoringEngine.js  ✅ Refactorizado preview/score
+└── systems/ScoringEngine.js   Refactorizado preview/score (sin _combineAllRoutes)
 ```
 
-## Que viene despues
+## Bugs conocidos pendientes
 
-**El usuario ha dicho que despues de cerrar esta sesion me pedira "algo gordo pero necesario"**. No se que es. Al retomar, esperar a que lo explique.
+- **Dinero negativo en shop**: closure obsoleto en `renderComponents` de `src/screens/ui/Shop.js`. Diferido a Fase 5 del refactor.
+- **`Game.js:23-24`**: linea `this.container = document.getElementById('game-container');` duplicada. Borrar una.
 
-**Pendiente conocido**:
-1. **Shop** a API uniforme (`mount`/`unmount`). Trabajo medio, 30 min.
-2. **Fase 3**: separar logica/presentacion en `Game.js`. Incluye crear `GameScreen` que envuelva `#game-container`. 3-5 sesiones.
-3. **Tutorial real** (ahora es placeholder que hace `console.log`).
-4. **Generacion procedural de zonas** (idea que planteo el usuario).
+## Fases restantes del refactor (contexto largo)
 
-**Bugs conocidos pendientes**:
-- **Dinero negativo en shop**: closure obsoleto en `renderComponents` de `src/screens/ui/Shop.js`. Diferido a Fase 5.
-- `_combineAllRoutes` en `ScoringEngine` es codigo muerto desde que eliminamos el Divisor. Se puede borrar limpio.
+| Fase | Que falta | Sesiones aprox |
+|---|---|---|
+| Fase 2 (casi cerrada) | Migrar Shop a API uniforme (`mount`/`unmount`). | 1 |
+| Fase 3 | Separar logica/presentacion en `Game.js`. Crear `GameScreen`. | 3-5 |
+| Fase 4 | Estado unico + event bus. | 3-5 |
+| Fase 5 | Bugs conocidos + limpieza CSS. | 1-2 |
+
+El usuario prefiere **alternar refactor con contenido** — no bloquea mecanicas nuevas por estar en medio del refactor. Fase A del sistema de fusion es contenido con un poquito de infraestructura, encaja bien ahora.
 
 ## Reglas duras del usuario
 
@@ -120,14 +217,13 @@ src/
 - **Musica del menu**: composicion propia en FL Studio. Respetar autoria.
 - **Distribucion**: itch.io HTML5 primario, Electron Win+Linux despues. No Mac, no Rust.
 - **Commits SIN Co-Authored-By** de Claude.
-- **PowerShell 5.1**: no soporta `&&`, usar `;` en comandos manuales.
+- **PowerShell 5.1** si se trabaja desde Windows: no soporta `&&`, usar `;` en comandos manuales.
 
 ## Referencias
 
 - `README.md` del proyecto — arquitectura, convenciones, como añadir componentes.
 - `src/config/changelog.js` — historial de versiones.
 - Vault Obsidian del usuario (multi-proyecto) — ver memoria `reference_obsidian_vault.md`.
-- Memorias en `.claude/projects/c--Users-alcat-OneDrive-Desktop-Proyectos-DEV-wireline/memory/`.
 
 ---
 

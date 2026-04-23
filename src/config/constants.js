@@ -13,6 +13,7 @@ export const CONFIG = {
   PLAYER: {
     START_LIVES: 3,
     START_MONEY: 5,
+    START_TICKETS: 1,
     INTEREST_PER: 5,
     INTEREST_MAX: 5,
   },

@@ -6,8 +6,14 @@ import {ChangelogScreen} from './screens/ChangelogScreen.js';
 import {TutorialScreen} from './screens/TutorialScreen.js';
 import {ScreenManager} from './screens/ScreenManager.js';
 
-const game = new Game ();
 const manager = new ScreenManager ();
+
+const game = new Game ({
+  onReturnToMenu: () => {
+    manager.show (menu);
+    startMenuMusic ();
+  },
+});
 
 const changelog = new ChangelogScreen ({
   onClose: () => changelog.unmount (),
@@ -18,11 +24,7 @@ const tutorial = new TutorialScreen ({
   onFinish: () => tutorial.unmount (),
   onSkip: () => {
     tutorial.unmount ();
-    game.goToMenu ();
-    setTimeout (() => {
-      startMenuMusic ();
-      manager.show (menu);
-    }, 300);
+    game.goToMenu ();2
   },
   audio: game.audio,
 });

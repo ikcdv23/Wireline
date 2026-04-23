@@ -2,6 +2,9 @@ import { NODE_SOURCE, NODE_OUTPUT } from './constants.js';
 import { dist } from '../lib/math.js';
 
 export const COMPONENT_DEFS = [
+    /*
+  - CAPACITOR
+  */
   {
     id: 'capacitor',
     name: 'Condensador',
@@ -33,6 +36,9 @@ export const COMPONENT_DEFS = [
       return s > 0 ? `GUARDADO: +${s} PTS` : 'SIN CARGA';
     },
   },
+  /*
+  - TRANSFORMER
+  */
   {
     id: 'transformer',
     name: 'Transformador',
@@ -54,6 +60,9 @@ export const COMPONENT_DEFS = [
         : null;
     },
   },
+  /*
+  - OVERLOAD
+  */
   {
     id: 'overload',
     name: 'Sobretension',
@@ -79,6 +88,9 @@ export const COMPONENT_DEFS = [
       return `AHORA: ${node.dieValue} → ${node.dieValue * 2}`;
     },
   },
+    /*
+  - APLIFIER
+  */
   {
     id: 'amplifier',
     name: 'Amplificador',
@@ -99,7 +111,10 @@ export const COMPONENT_DEFS = [
         ? `AHORA: ${node.dieValue} x2 = ${node.dieValue * 2}`
         : null;
     },
-  },
+  },  
+  /*
+  - FUSE
+  */
   {
     id: 'fuse',
     name: 'Fusible',
@@ -124,6 +139,9 @@ export const COMPONENT_DEFS = [
       return `USOS: ${this.usesLeft || 0}/2`;
     },
   },
+    /*
+  - INVERTER
+  */
   {
     id: 'inverter',
     name: 'Inversor',
@@ -149,6 +167,9 @@ export const COMPONENT_DEFS = [
       return `AHORA: ${node.dieValue} > ${inverted}`;
     },
   },
+  /*
+  - CRITICAL
+  */
   {
     id: 'critical',
     name: 'Acumulador Critico',
